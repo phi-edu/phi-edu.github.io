@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#15181F">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Фи">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <script>
     /* Тема оформления: «dark» или «light». Пока человек не выбрал вручную, берётся тема системы и следует за ней.
        Выбор хранится в том же хранилище, что и прогресс (ui.theme). Тема ставится до первой отрисовки, поэтому мигания нет. */
@@ -9466,7 +9472,6 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       });
       return out;
     }
-    const stBad = (x) => (x.w + x.r >= 4 ? x.w / (x.w + x.r) : -1);
     // Чип цели и даты: «Цель ЕГЭ ▾» и «+ Дата»; с датой один чип «Нац. сертификат · 45 дней». Список целей раскрывается под чипом
     function hmGoal() {
       const u = Store.s.ui, g = goalUser(), gn = GOAL_SHORT[g] || GOAL_NAME[g] || '';
@@ -9478,23 +9483,15 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       const drop = !HM.goal ? '' : `<div class="hm-drop" role="listbox" aria-label="Цель">${GOALS.map(([k, n]) => `<button type="button" role="option" aria-selected="${k === g}" class="hm-di${k === g ? ' on' : ''}" data-hm="goal-set" data-goal="${k}">${esc(n)}</button>`).join('')}${hasD ? `<label class="hm-di sub"><span>Изменить дату</span><input type="date" id="hm-date" value="${u.exam}" min="${today()}" aria-label="Дата экзамена"></label><button type="button" class="hm-di sub" data-hm="date-x">Убрать дату</button>` : ''}</div>`;
       return `<div class="hm-top">${chip}${date}</div>${drop}`;
     }
-    function hmWeakAll() {
-      const G = stGroups(), out = [];
-      Object.keys(G).forEach((sec) => Object.keys(G[sec].subs).forEach((sub) => { const r = stBad(G[sec].subs[sub]); if (r >= 0.3) out.push({ sec, sub, r }); }));
-      return out.sort((a, b) => b.r - a.r).slice(0, 3);
-    }
-    function hmWeakHTML() {
-      const L = hmWeakAll();
-      if (!L.length) return '<div class="ds-card hm-weak"><div class="ds-top"><span class="ds-title">Слабые места</span></div><p class="ds-meta">Появятся после нескольких ответов</p></div>';
-      const rows = L.map((w) => `<button type="button" class="hm-wk" data-hm="tr" data-sec="${w.sec}" data-sub="${esc(w.sub)}"><span class="hm-wk-t">${esc(w.sub)}</span><span class="hm-wk-p">${Math.round(w.r * 100)}%</span><i class="hm-wk-b" style="--p:${Math.round(w.r * 100)}%"></i></button>`).join('');
-      return `<div class="ds-card hm-weak"><div class="ds-top"><span class="ds-title">Слабые места</span><span class="ds-streak">ошибок</span></div>${rows}</div>`;
-    }
-    // Выучено N из M одной строкой с тонкой полоской
+    // Главная: «Выучено» — процент выученных формул по каждому открытому разделу
     function hmLearnHTML() {
-      const G = stGroups(); let n = 0, ok = 0;
-      Object.keys(G).forEach((k) => { n += G[k].n; ok += G[k].ok; });
-      if (!n) return '';
-      return `<div class="ds-card hm-learn"><div class="hm-lr"><span class="ds-title">Выучено <b>${ok}</b> из ${n}</span><span class="hm-pc">${Math.round(ok / n * 100)}%</span></div><span class="hm-bar"><i style="width:${ok ? Math.max(2, Math.round(ok / n * 100)) : 0}%"></i></span></div>`;
+      const G = stGroups(), ks = Object.keys(SECTIONS).filter((k) => G[k] && G[k].n);
+      if (!ks.length) return '';
+      const rows = ks.map((k) => {
+        const g = G[k], p = Math.round(g.ok / g.n * 100);
+        return `<div class="stx-row"><span class="stx-t"><b>${esc(SECTIONS[k].name)}</b></span><span class="stx-p">${p}%</span><span class="hm-bar"><i style="width:${g.ok ? Math.max(2, p) : 0}%"></i></span></div>`;
+      }).join('');
+      return `<div class="ds-card hm-secs hm-lrn"><div class="ds-top"><span class="ds-title">Выучено</span></div>${rows}</div>`;
     }
     // Ответы за период: «Неделя» — 7 последних дней, «Месяц» — 30 дней, «Всё» — месяцы (до 12). Данные берутся из S2().days
     const HM_PER = [['week', 'Неделя'], ['month', 'Месяц'], ['all', 'Всё']];
@@ -9583,39 +9580,26 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       const P = hmPeriod(HM.per);
       return `<div class="ds-card hm-st"><div class="ds-top"><span class="ds-title">Статистика</span><button type="button" class="hm-all" data-hm="stats">Вся статистика${HM_CHEV}</button></div>${hmSeg()}${hmNum(P.total)}${hmChart(P)}</div>`;
     }
-    function stTrain(sec, sub) {
-      const g = stGroups()[sec], pool = ((g && g.subs[sub] && g.subs[sub].ids) || []).map(fById).filter(Boolean);
-      if (!pool.length) return;
-      if (SEC !== sec) { window.__secStay = true; setSection(sec); window.__secStay = false; }
-      s2Stop(); switchTab('trainer');
-      TR.pool = pool; TR.mode = 'quiz'; TR.streak = 0; TR.last = null; TR.topic = trTopicKey('t', 'w:' + sub); trNext();
-    }
-    // Экран «Вся статистика»: период и активность по дням, точность и выученное по разделам, слабые формулы
+    // Экран «Вся статистика»: график активности по дням и точность по разделам
     function stActivity() {
       const P = hmPeriod(HM.per);
       return `<div class="ds-card hm-st"><div class="ds-top"><span class="ds-title">Активность</span><span class="ds-streak">дней с ответами: ${P.act}${P.span ? ' из ' + P.span : ''}</span></div>${hmSeg()}${hmNum(P.total)}${hmChart(P, true)}</div>`;
     }
-    function stSections() {
+    // Статистика: «Точность» — доля верных ответов и число сыгранных упражнений по каждому разделу
+    function stAccuracy() {
       const G = stGroups(), ks = Object.keys(SECTIONS).filter((k) => G[k] && G[k].n);
       if (!ks.length) return '';
       const rows = ks.map((k) => {
-        const g = G[k], p = Math.round(g.ok / g.n * 100), acc = g.r + g.w ? Math.round(g.r / (g.r + g.w) * 100) + '%' : '—';
-        return `<div class="stx-row"><span class="stx-t"><b>${esc(SECTIONS[k].name)}</b><small>выучено ${g.ok} из ${g.n} · точность ${acc}</small></span><span class="stx-p">${p}%</span><span class="hm-bar"><i style="width:${p}%"></i></span></div>`;
+        const g = G[k], tot = g.r + g.w, p = tot ? Math.round(g.r / tot * 100) : 0;
+        const cnt = tot ? `${tot.toLocaleString('ru-RU')} ${plRu(tot, 'упражнение', 'упражнения', 'упражнений')}` : 'пока нет ответов';
+        return `<div class="stx-row"><span class="stx-t"><b>${esc(SECTIONS[k].name)}</b><small>${cnt}</small></span><span class="stx-p">${tot ? p + '%' : '—'}</span><span class="hm-bar"><i style="width:${tot ? Math.max(2, p) : 0}%"></i></span></div>`;
       }).join('');
-      return `<div class="ds-card hm-secs"><div class="ds-top"><span class="ds-title">Разделы</span></div>${rows}</div>`;
+      return `<div class="ds-card hm-secs hm-acc"><div class="ds-top"><span class="ds-title">Точность</span></div>${rows}</div>`;
     }
-    // Слабая формула: хотя бы 3 ответа и не меньше 30% ошибок; до 8 штук, сначала самые трудные
-    function stWeakF() {
-      const out = [];
-      allF().forEach((f) => { const c = Store.card(f.id); if (!c) return; const a = c.reps + c.lapses; if (a >= 3 && c.lapses / a >= 0.3) out.push({ f, r: c.lapses / a, a }); });
-      out.sort((x, y) => y.r - x.r || y.a - x.a);
-      const rows = out.slice(0, 8).map(({ f, r }) => `<button type="button" class="hm-wk" data-hm="tr" data-sec="${(f.sections && f.sections[0]) || ''}" data-sub="${esc(f.subCategory || 'Без темы')}"><span class="hm-wk-t">${esc(f.title || f.id)}</span><span class="hm-wk-p">${Math.round(r * 100)}%</span></button>`).join('');
-      return `<div class="ds-card hm-weak stx-f"><div class="ds-top"><span class="ds-title">Слабые формулы</span>${rows ? '<span class="ds-streak">ошибок</span>' : ''}</div>${rows || '<p class="ds-meta">Появятся после нескольких ответов</p>'}</div>`;
-    }
-    const stScreen = () => `<div class="tr-bar"><button type="button" data-hm="back" class="tr-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button><h2 class="tr-mt">Статистика</h2><span class="tr-gap" aria-hidden="true"></span></div>${stActivity()}${stSections()}${stWeakF()}`;
+    const stScreen = () => `<div class="tr-bar"><button type="button" data-hm="back" class="tr-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button><h2 class="tr-mt">Статистика</h2><span class="tr-gap" aria-hidden="true"></span></div>${stActivity()}${stAccuracy()}`;
     function homeRender() {
       const r = $('home-root'); if (!r) return;
-      r.innerHTML = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : hmGoal() + dsCardHTML() + hmStatsHTML() + hmLearnHTML() + hmWeakHTML()}</div>`;
+      r.innerHTML = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : hmGoal() + dsCardHTML() + hmStatsHTML() + hmLearnHTML()}</div>`;
     }
     function hmClick(e) {
       const m = e.target.closest('[data-s2="ds-more"]'); if (m) { switchTab('trainer'); dsStart(true); return; }
@@ -9629,7 +9613,6 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       else if (a === 'goal-set') { HM.goal = false; goalApply(b.dataset.goal); buzz(8); }
       else if (a === 'date-x') { HM.goal = false; Store.s.ui.exam = ''; Store.save(); homeRender(); }
       else if (a === 'stats' || a === 'back') { HM.sel = null; HM.view = a === 'stats' ? 'stats' : 'main'; homeRender(); window.scrollTo({ top: 0, behavior: 'auto' }); }
-      else if (a === 'tr') stTrain(b.dataset.sec, b.dataset.sub);
       else if (a === 'per' && HM_PER.some((x) => x[0] === b.dataset.per)) { HM.per = b.dataset.per; HM.sel = null; homeRender(); }
     }
     function hmChange(e) {
@@ -11038,10 +11021,19 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     p.panel.style.transition = ''; p.panel.style.transform = ''; p.panel.style.willChange = '';
     if (p.scrim) { p.scrim.style.transition = ''; p.scrim.style.opacity = ''; } else p.root.style.removeProperty('--sk');
   }
+  // Прокручивается не сама панель, а список внутри неё (например #f-list): берём ближайший прокручиваемый элемент под пальцем
+  function scroller(t, panel) {
+    for (var e = t; e && e.nodeType === 1; e = e.parentNode) {
+      var oy = getComputedStyle(e).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 1) return e;
+      if (e === panel) break;
+    }
+    return panel;
+  }
   function start(y, target, ts) {
     var p = parts(target); if (!p) { S = null; return; }
     var r = p.panel.getBoundingClientRect();
-    S = { p: p, y0: y, off: 0, on: false, dead: false, h: r.height || 400, hist: [[ts, y]],
+    S = { p: p, sc: scroller(target, p.panel), y0: y, off: 0, on: false, dead: false, h: r.height || 400, hist: [[ts, y]],
           handle: !!target.closest('.th-grab,.th-t,.fhead') || (y - r.top) < 36 };
   }
   function move(y, ev) {
@@ -11049,7 +11041,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     var dy = y - S.y0, p = S.p;
     if (!S.on) {
       if (Math.abs(dy) < 6) return;
-      if (dy > 0 && (S.handle || p.panel.scrollTop <= 0)) { S.on = true; S.y0 = y; dy = 0; p.panel.style.transition = 'none'; p.panel.style.willChange = 'transform'; }
+      if (dy > 0 && (S.handle || (S.sc.scrollTop <= 0 && p.panel.scrollTop <= 0))) { S.on = true; S.y0 = y; dy = 0; p.panel.style.transition = 'none'; p.panel.style.willChange = 'transform'; }
       else if (!S.handle) { S.dead = true; return; }
       else { S.on = true; S.y0 = y; dy = 0; p.panel.style.transition = 'none'; }
     }
@@ -11420,12 +11412,12 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
   var BAR = '.hm-bar i', NUM = '.hm-num b,.hm-learn .ds-title b,.stx-p';
   var seenBar = {}, seenNum = {}, pend = [], queued = false;
   function label(el) {
-    var r = el.closest('.stx-row'), b = r && r.querySelector('b');
-    return b ? b.textContent : ((el.closest('.ds-card') || {}).className || '');
+    var r = el.closest('.stx-row'), b = r && r.querySelector('b'), c = (el.closest('.ds-card') || {}).className || '';
+    return (b ? b.textContent + '|' : '') + c;
   }
   function collect(n, sel, out) {
-    if (n.matches && n.matches(sel)) out.push(n);
-    if (n.querySelectorAll) { var l = n.querySelectorAll(sel); for (var j = 0; j < l.length; j++) out.push(l[j]); }
+    if (n.matches && n.matches(sel) && out.indexOf(n) < 0) out.push(n);
+    if (n.querySelectorAll) { var l = n.querySelectorAll(sel); for (var j = 0; j < l.length; j++) if (out.indexOf(l[j]) < 0) out.push(l[j]); }
   }
   // Полоска растёт слева направо; при изменении значения плавно тянется от прежнего к новому
   function bar(i, idx) {
@@ -11438,14 +11430,16 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
   // Число «накручивается» от прежнего значения к новому, в конце возвращается исходный текст
   function roll(el, from, to, suf) {
     var t0 = performance.now(), d = Math.min(700, 300 + Math.abs(to - from) * 8), txt = el.textContent;
+    el._fiRoll = true;
     (function f(t) {
-      if (!el.isConnected) return;
+      if (!el.isConnected) { el._fiRoll = false; return; }
       var p = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - p, 3);
       if (p < 1) { el.textContent = Math.round(from + (to - from) * e) + suf; requestAnimationFrame(f); }
-      else el.textContent = txt;
+      else { el._fiRoll = false; el.textContent = txt; }
     })(t0);
   }
   function num(el) {
+    if (el._fiRoll) return;   // число уже «накручивается»: его текст сейчас промежуточный, читать его нельзя
     var m = /^(\d+)(%?)$/.exec(el.textContent.trim());
     if (!m) return;
     var to = +m[1], k = 'n|' + el.tagName + '|' + (el.className || '') + '|' + label(el), prev = seenNum[k];
@@ -11663,7 +11657,7 @@ html:root[data-theme="dark"][data-accent="green"] #bg,html:root[data-theme="dark
   background-image:radial-gradient(120% 70% at 50% -12%,color-mix(in srgb,var(--hero-a) 30%,transparent) 0,color-mix(in srgb,var(--hero-b) 10%,transparent) 45%,transparent 72%)}
 
 /* 2. Карточки под «Сегодня»: едва заметный оттенок гаммы и верхняя кромка, рамка нейтральная */
-html:root[data-theme="dark"] .hm .ds-card.hm-st,html:root[data-theme="dark"] .hm .ds-card.hm-learn,html:root[data-theme="dark"] .hm .ds-card.hm-weak,
+html:root[data-theme="dark"] .hm .ds-card.hm-st,html:root[data-theme="dark"] .hm .ds-card.hm-secs,
 html:root[data-theme="dark"] .th-list,html:root[data-theme="dark"] #hb-list:not(.hb-v-list) article{
   background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 5%,var(--sf)) 0,var(--sf) 60%);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
 
@@ -11762,6 +11756,51 @@ html:root[data-theme="light"] .hm-seg{background:color-mix(in srgb,var(--acc) 8%
 html:root[data-theme="light"] .hm-seg button.on{background:var(--acc);color:var(--on-acc);font-weight:700}
 html:root[data-theme="light"] nav.bnav button.tb.tab-on{background:color-mix(in srgb,var(--acc) 15%,#fff);color:var(--acc)}
 html:root[data-theme="light"] nav.bnav button.tb.tab-on .tb-l{color:var(--t1)}
+
+/* ═══ «Карточки Справочника: шрифт и кнопки» (12 ноября). Только оформление, логика не тронута.
+   Шрифт тот же (Inter), заголовок легче, у «Условий» просторнее строки; кнопки в стиле плиток Тренажёра:
+   цвет гаммы, один размер, значок крупнее. Чтобы вернуть прежний вид, удалите этот блок целиком. */
+html:root[data-theme] #hb-list article>h3{line-height:1.28}
+html:root[data-theme][data-theme] #hb-list article p.text-xs{line-height:1.6}
+html:root[data-theme] #hb-list article details>summary svg{color:var(--mu)}
+html:root[data-theme] #hb-list article .hb-act{gap:.55rem;align-items:center;margin-top:1.1rem}
+html:root[data-theme] #hb-list article .hb-copy{width:3rem;height:3rem;min-height:3rem;border:0;border-radius:var(--r-btn);background:color-mix(in srgb,var(--acc) 13%,transparent);color:var(--acc)}
+html:root[data-theme] #hb-list article .hb-copy svg{width:1.45rem;height:1.45rem;stroke-width:1.8}
+html:root[data-theme] #hb-list article .hb-copy.done{color:var(--gn);background:var(--ok-bg)}
+html:root[data-theme] #hb-list article .hb-copy.fail{color:var(--rd);background:var(--bad-bg)}
+html:root[data-theme] #hb-list article button.rounded-lg[data-act="learn"]:not([class*="emerald"]){min-height:3rem;border:0;border-radius:var(--r-btn);background:color-mix(in srgb,var(--acc) 13%,transparent);color:var(--acc);font-size:var(--fs-b);font-weight:500;letter-spacing:0}
+html:root[data-theme] #hb-list article button[data-act="learn"][class*="emerald"]{min-height:3rem;border:0;border-radius:var(--r-btn);background:var(--ok-bg);color:var(--gn);font-size:var(--fs-b);font-weight:500;letter-spacing:0}
+
+
+/* ═══ «Жирный = главное» (12 ноября). Жирный (600, размер --fs-h2) только у главного на каждой вкладке:
+   Главная: названия блоков («Статистика», «Выучено»…); Справочник: название формулы; Тренажёр: названия режимов;
+   Настройки: заголовки блоков. Всё второстепенное тоньше: подписи групп единые (500, серым, одного размера).
+   Чтобы вернуть прежний вид, удалите этот блок целиком. */
+html:root[data-theme][data-theme] #hb-list article>h3,
+html:root[data-theme][data-theme] #hb-list.hb-v-list article>h3,
+html:root[data-theme][data-theme] .hm-st .ds-title,
+html:root[data-theme][data-theme] .hm-learn .ds-title,
+html:root[data-theme][data-theme] .hm-weak .ds-title,
+html:root[data-theme][data-theme] .hm-secs .ds-title,
+html:root[data-theme][data-theme] .slab,
+html:root[data-theme][data-theme] #ssheet .slab,
+html:root[data-theme][data-theme] .sp-card .slab,
+html:root[data-theme][data-theme] .th-tx b,
+html:root[data-theme][data-theme] .th-err,
+html:root[data-theme][data-theme] .tt-n,
+html:root[data-theme][data-theme] .fhead b{font-size:var(--fs-h2);font-weight:600;line-height:1.3;letter-spacing:0}
+html:root[data-theme][data-theme] .hb-gh,
+html:root[data-theme][data-theme] .th-gh,
+html:root[data-theme][data-theme] .sp-h{font-size:var(--fs-b);font-weight:500;letter-spacing:0;color:var(--mu)}
+
+/* ═══ «Главная: заголовок блока и строки» (12 ноября). Заголовок блока («Статистика», «Выучено»…) крупнее и жирнее,
+   строки под ним (названия разделов, проценты) остаются прежними, жирными; заголовок отличается размером.
+   Чтобы вернуть прежний вид, удалите этот блок целиком. */
+html:root[data-theme][data-theme] .hm-st .ds-title,
+html:root[data-theme][data-theme] .hm-learn .ds-title,
+html:root[data-theme][data-theme] .hm-weak .ds-title,
+html:root[data-theme][data-theme] .hm-secs .ds-title{font-size:var(--fs-h1);font-weight:700;line-height:1.2;letter-spacing:-.01em;color:var(--t1)}
+html:root[data-theme][data-theme] .hm-learn .ds-title b{font-weight:inherit;font-size:inherit}
 </style>
 <script id="fi-lift-js">
 /* Цвет системной полосы браузера (theme-color) следует за фоном выбранной гаммы: раньше он всегда был тёмно-синим и в оранжевой и зелёной гаммах выбивался */
@@ -11843,6 +11882,16 @@ html:root[data-theme="light"] nav.bnav button.tb.tab-on .tb-l{color:var(--t1)}
   var sh = document.getElementById('ssheet');
   if (sh) new MutationObserver(mark).observe(sh, { attributes: true, attributeFilter: ['hidden'] });
   mark();
+})();
+</script>
+<script>
+/* Установка как приложение (PWA): офлайн-кэш. Работает только по https (GitHub Pages), локально из файла не включается */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+  window.addEventListener('load', function () {
+    try { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () { /* не страшно */ }); } catch (e) { /* не страшно */ }
+  });
 })();
 </script>
 </body>
