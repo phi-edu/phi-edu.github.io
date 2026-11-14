@@ -2174,6 +2174,13 @@ html:root[data-theme] .th-grab{align-self:center;width:2.4rem;height:4px;margin-
 html:root[data-theme] .th-t{margin:0 0 .4rem;font-size:var(--fs-h1);font-weight:700;line-height:1.2;color:var(--t1)}
 html:root[data-theme] .th-lb{margin:.6rem .1rem .1rem;font-size:var(--fs-c);line-height:1.4;color:var(--mu)}
 html:root[data-theme] .th-chips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.2rem}
+html:root[data-theme] .th-chip{display:inline-flex;align-items:center;gap:.4rem;max-width:100%;min-height:2.4rem;padding:.35rem .85rem;border:0;border-radius:12px;background:var(--sf2);font-size:var(--fs-b);font-weight:400;line-height:1.25;color:var(--tx);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color .15s ease,color .15s ease,box-shadow .15s ease}
+html:root[data-theme] .th-chip small{flex:none;font-size:var(--fs-c);color:var(--mu);font-variant-numeric:tabular-nums}
+html:root[data-theme] .th-chip.on{background:var(--acc-soft-hi);box-shadow:inset 0 0 0 1.5px var(--acc-border);color:var(--t1);font-weight:600}
+html:root[data-theme] .th-chip.on small{color:var(--tx)}
+html:root[data-theme] .th-chip.lock{opacity:.5}
+html:root[data-theme] .th-hint{color:var(--tx)}
+@media (prefers-reduced-motion:reduce){html:root[data-theme] .th-chip{transition:none}}
 html:root[data-theme] .th-note{margin:.4rem .1rem 0;font-size:var(--fs-c);line-height:1.4;color:var(--mu)}
 html:root[data-theme] .th-desc{margin:0 .1rem .2rem;font-size:var(--fs-b);line-height:1.45;color:var(--tx)}
 html:root[data-theme] .th-lv{display:flex;flex-direction:column;gap:.45rem;margin:.55rem .1rem 0;font-size:var(--fs-c);line-height:1.45;color:var(--mu)}
@@ -7400,6 +7407,9 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       if (HBD_C.key !== key) HBD_C = { key, d: all };
       return HBD_C.d;
     };
+    // Темы режима: 'all', одна тема строкой или несколько тем массивом
+    const inCat = (cat, f) => !cat || cat === 'all' || (Array.isArray(cat) ? cat.includes(f.category) : f.category === cat);
+    const catKey = (cat) => (Array.isArray(cat) ? cat.slice().sort().join('+') : (cat || 'all'));
     const plForm = (n) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'формулы' : 'формул';
     const BTN = 'rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors';
     const LEARN_ON = 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400';
@@ -7968,7 +7978,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       trPaint(`<div class="mx-auto max-w-xl space-y-4 th-keep">${thHubHTML()}</div>`, quiet);
     }
     // Рекорд серии хранится отдельно для каждой темы: t: — Тесты, c/h: — Конструктор
-    const trTopicKey = (mode, cat) => mode + ':' + SEC + '/' + cat;
+    const trTopicKey = (mode, cat) => mode + ':' + SEC + '/' + catKey(cat);
     const TH_MODES = {
       ctor: { t: 'Конструктор', d: 'Собери формулу из символов и знаков по её названию. Задания идут по всем формулам выбранного раздела.', ico: '<rect x=\"3\" y=\"4\" width=\"8\" height=\"7\" rx=\"2\"/><rect x=\"13\" y=\"4\" width=\"8\" height=\"7\" rx=\"2\"/><rect x=\"8\" y=\"13\" width=\"8\" height=\"7\" rx=\"2\"/>' },
       rev: { t: 'Узнай формулу', d: 'Тебе показывают формулу, нужно выбрать её название. Иногда наоборот: даны условия применения, и надо выбрать подходящую формулу.', ico: '<circle cx=\"10.5\" cy=\"10.5\" r=\"6\"/><path d=\"M20 20l-5.2-5.2M8 10.5h5\"/>' },
@@ -8000,9 +8010,39 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     const thHubHTML = () => thErrRow() + TH_GROUPS.map(([g, ks], gi) => `<section class="th-g th-gi${gi}"><h3 class="th-gh">${g}</h3><div class="th-list">${ks.map(thRowHTML).join('')}</div></section>`).join('');
 
     // Лист снизу: темы чипами, параметры режима, кнопка. Последние настройки запоминаются
-    const TH = { k: null };
+    const TH = { k: null, hint: '' };
     function thSeg(label, attr, opts, cur) {
       return `<p class="th-lb">${label}</p><div class="s2-lvl" role="group" aria-label="${label}">${opts.map(([v, t]) => { const on = String(cur) === String(v); return `<button type="button" data-th-p="${attr}:${v}" aria-pressed="${on}"${on ? ' class="on"' : ''}>${t}</button>`; }).join('')}</div>`;
+    }
+    // Темы раздела чипами, можно выбрать несколько; пусто = все темы. В выборке должно быть минимум две формулы:
+    // тема с одной формулой выбирается только вместе с другой темой
+    const TH_MIN = 2;
+    const thSel = () => { const m = (Store.s.ui.thTopics || {})[SEC]; return Array.isArray(m) ? m : []; };
+    function thSetSel(a) {
+      const u = Store.s.ui; if (!u.thTopics || typeof u.thTopics !== 'object') u.thTopics = {};
+      if (a.length) u.thTopics[SEC] = a; else delete u.thTopics[SEC];
+      Store.save();
+    }
+    // Формулы режима по темам: cnt — сколько в каждой теме, cats — темы, где они есть, sel — выбранные (пусто = все)
+    function thInfo(k) {
+      const pool = thPool(k), cnt = {};
+      pool.forEach((f) => { cnt[f.category] = (cnt[f.category] || 0) + 1; });
+      const cats = Object.keys(SECTIONS[SEC].cats || {}).filter((c) => cnt[c]);
+      const sel = thSel().filter((c) => cnt[c]);
+      return { pool, cnt, cats, sel: sel.length && sel.length < cats.length ? sel : [] };
+    }
+    const thSize = (i, sel) => (sel.length ? sel : i.cats).reduce((n, c) => n + i.cnt[c], 0);
+    // Новый набор тем после нажатия на тему (пустой = все) или null, если так выбрать нельзя
+    function thToggle(i, c) {
+      let a = i.sel.includes(c) ? i.sel.filter((x) => x !== c) : i.sel.concat(c);
+      if (a.length === i.cats.length) a = [];
+      return a.length && thSize(i, a) < TH_MIN ? null : a;
+    }
+    const thReady = (i) => (i.sel.length ? thSize(i, i.sel) >= TH_MIN : i.pool.length > 0);
+    function thTopicsHTML(i) {
+      if (i.cats.length < 2) return '';
+      const chip = (id, name, n, on, lock) => `<button type="button" data-th-t="${id}" class="th-chip${on ? ' on' : ''}${lock ? ' lock' : ''}" aria-pressed="${on}"><span>${esc(name)}</span><small>${n}</small></button>`;
+      return `<p class="th-lb">Темы</p><div class="th-chips" role="group" aria-label="Темы">${chip('all', 'Все темы', i.pool.length, !i.sel.length, false)}${i.cats.map((c) => { const on = i.sel.includes(c); return chip(c, SECTIONS[SEC].cats[c], i.cnt[c], on, !on && thToggle(i, c) === null); }).join('')}</div>`;
     }
     function thPanelHTML() {
       const k = TH.k, m = TH_MODES[k], pool = thPool(k), blz = k === 'blitz', ctor = k === 'ctor';
@@ -8017,14 +8057,18 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
           + (BL.mode === 'round' ? thSeg('Время', 'blt', BL_TIMES.map((t) => [t, t + ' с']), BL.cfg.time) + thSeg('Допустимо ошибок', 'ble', [['1', '1'], ['3', '3'], ['5', '5']], BL.cfg.err) : '');
       }
       if (!pool.length) note = k === 'rearr' ? 'Пока есть только для механики' : 'В этом разделе пока нет подходящих формул';
+      // Выживание идёт по всему плану, темы к нему не относятся
+      const useT = !(blz && BL.mode === 'surv'), ti = thInfo(k), ready = useT ? thReady(ti) : pool.length > 0;
+      let hint = TH.hint || '';
+      if (!hint && useT && pool.length && !ready) hint = 'В выбранных темах для этого режима мало формул. Добавь ещё тему.';
       return `<i class="th-grab" aria-hidden="true"></i><h3 class="th-t">${m.t}</h3>
         <p class="th-desc">${esc(desc)}</p>
-        ${params}${note ? `<p class="th-note">${esc(note)}</p>` : ''}
-        <button type="button" data-th-go class="${BTN_PRIMARY}"${pool.length ? '' : ' disabled'}>${blz ? 'Играть' : 'Начать'}</button>${lv}`;
+        ${params}${useT ? thTopicsHTML(ti) : ''}${note ? `<p class="th-note">${esc(note)}</p>` : ''}${hint ? `<p class="th-note th-hint" role="status">${esc(hint)}</p>` : ''}
+        <button type="button" data-th-go class="${BTN_PRIMARY}"${ready ? '' : ' disabled'}>${blz ? 'Играть' : 'Начать'}</button>${lv}`;
     }
     const thPaint = () => { const p = $('th-panel'); if (p && TH.k) p.innerHTML = thPanelHTML(); };
     function thSheetOpen(k) {
-      TH.k = k; let sh = $('th-sheet');
+      TH.k = k; TH.hint = ''; let sh = $('th-sheet');
       if (!sh) {
         sh = document.createElement('div'); sh.id = 'th-sheet'; sh.className = 'th-sheet'; sh.hidden = true;
         sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
@@ -8043,6 +8087,17 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     function thSheetClick(e) {
       const t = e.target;
       if (t.closest('[data-th-x]')) { thSheetClose(); return; }
+      const tc = t.closest('[data-th-t]');
+      if (tc && TH.k) {
+        const i = thInfo(TH.k), c = tc.dataset.thT; TH.hint = '';
+        if (c === 'all') thSetSel([]);
+        else {
+          const a = thToggle(i, c);
+          if (a === null) TH.hint = i.sel.includes(c) ? 'Нужно хотя бы две формулы. Оставь ещё одну тему.' : 'В теме «' + SECTIONS[SEC].cats[c] + '» одна формула, отдельно её не выбрать. Сначала выбери другую тему, затем добавь эту.';
+          else thSetSel(a);
+        }
+        thPaint(); return;
+      }
       const p = t.closest('[data-th-p]');
       if (p) {
         const [a, v] = p.dataset.thP.split(':'), u = Store.s.ui;
@@ -8050,20 +8105,23 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         else if (a === 'blm') { BL.mode = v; u.blMode = v; }
         else if (a === 'blt') { BL.cfg.time = +v; u.blTime = +v; }
         else if (a === 'ble') { BL.cfg.err = v; u.blErr = v; }
-        Store.save(); thPaint(); return;
+        TH.hint = ''; Store.save(); thPaint(); return;
       }
       if (t.closest('[data-th-go]')) thGo();
     }
     // «Начать» / «Играть»: таймер и первый вопрос стартуют только здесь
     function thGo() {
       const k = TH.k, pool = thPool(k); if (!k || !pool.length) return;
-      const cat = 'all';   // режимы работают по всем формулам выбранного раздела
+      // режимы работают по выбранным темам раздела; темы не выбраны — по всем. Выживание всегда идёт по всему плану
+      const ti = thInfo(k), useT = !(k === 'blitz' && BL.mode === 'surv');
+      if (useT && !thReady(ti)) return;
+      const cat = useT && ti.sel.length ? ti.sel : 'all';
       thSheetClose(true);
       if (k === 'blitz') { blOpenView(cat); return; }
       if (k === 'ctor') { ctStart(cat); return; }
       if (k === 'tests') {
         if (window.fxHue) fxHue(cat);
-        TR.pool = pool.filter((f) => cat === 'all' || f.category === cat); TR.mode = 'quiz'; TR.streak = 0; TR.last = null; TR.topic = trTopicKey('t', cat); trNext(); return;
+        TR.pool = pool.filter((f) => inCat(cat, f)); TR.mode = 'quiz'; TR.streak = 0; TR.last = null; TR.topic = trTopicKey('t', cat); trNext(); return;
       }
       DR.cat = cat; DR.pick = k; drStart(k);
     }
@@ -8398,7 +8456,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     }
     function ctStart(cat) {
       if (window.fxHue) fxHue(cat);
-      TR.pool = HBD().filter((f) => (cat === 'all' || f.category === cat) && ctOk(f));
+      TR.pool = HBD().filter((f) => inCat(cat, f) && ctOk(f));
       CT.hard = !!Store.s.ui.ctHard;
       TR.mode = 'ctor'; TR.streak = 0; TR.last = null; TR.topic = trTopicKey(CT.hard ? 'h' : 'c', cat);
       TR.clean = { n: 0, need: TR.pool.length };   // для достижения «чистая тема»: все формулы темы без каркаса и без ошибок
@@ -8878,7 +8936,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         if ('bad' in it) { BL.bad = it.bad; BL.err = it.err; }
         else { BL.bad = Math.random() < 0.5; BL.err = BL.bad ? mutateErr(BL.cur) : null; }
       } else {
-        BL.cur = pickNext(BL.cat && BL.cat !== 'all' ? HBD().filter((f) => f.category === BL.cat) : HBD(), BL.last);
+        BL.cur = pickNext(HBD().filter((f) => inCat(BL.cat, f)), BL.last);
         if (!BL.cur) return;
         BL.bad = Math.random() < 0.5; BL.err = BL.bad ? mutateErr(BL.cur) : null;
       }
@@ -10303,8 +10361,8 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     }
 
     // ── Отдельное упражнение: бесконечная серия по выбранной теме раздела ──
-    const drKey = () => 'd:' + DR.kind + ':' + SEC + '/' + DR.cat;
-    function drPool(kind) { return HBD().filter((f) => (DR.cat === 'all' || f.category === DR.cat) && drAvail(kind, f)); }
+    const drKey = () => 'd:' + DR.kind + ':' + SEC + '/' + catKey(DR.cat);
+    function drPool(kind) { return HBD().filter((f) => inCat(DR.cat, f) && drAvail(kind, f)); }
     function drStart(kind) {
       DR.kind = kind; DR.pool = drPool(kind); DR.last = null; DR.streak = 0; DR.failN = 0;
       if (!DR.pool.length) return;
@@ -10544,7 +10602,8 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     const blSurvText = () => { const n = blSurvPool().length, pl = GOAL_NAME[goalUser()]; return `Все ${n} ${plForm(n)}${pl ? ' плана «' + pl + '»' : ''} идут в случайном порядке, без таймера. Первая ошибка заканчивает игру. Счёт показывается как «N из ${n}».`; };
     function blRecKey() {
       if (BL.mode === 'surv') return 'surv:' + BL_LV;
-      return blKey(BL.cfg.time, BL.cfg.err);
+      // раунд по выбранным темам — отдельный рекорд: по двум темам набрать очки проще, чем по всему разделу
+      return blKey(BL.cfg.time, BL.cfg.err) + (Array.isArray(BL.cat) ? '|' + SEC + '/' + catKey(BL.cat) : '');
     }
     function blRecLabel() {
       if (BL.mode === 'surv') return 'выживание';
