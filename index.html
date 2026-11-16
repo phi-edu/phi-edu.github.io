@@ -9202,18 +9202,38 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     // Содержимое вкладки обновляется ДО того, как она показана (иначе после свайпа страница перерисовывается на глазах).
     // Событие 'mechcore:tabprepare' (detail: { tab }) приходит один раз за переход, пока вкладка ещё скрыта.
     let preparedTab = null;
+    const prepMemo = {};                                  // когда и при каком состоянии вкладку готовили в прошлый раз
     function prepareTab(name) {
       if (preparedTab === name) return;
       preparedTab = name;
+      // Быстрые переключения туда-сюда: вкладку только что готовили и ничего не менялось (рев. хранилища та же) —
+      // не пересобираем Главную и не «поднимаем» карточки заново: иначе каждый разворот пересчитывает всё это впустую
+      const m = prepMemo[name], now = performance.now();
+      if (m && m.rev === (window.__fiRev | 0) && now - m.t < 5000 && (name !== 'home' || (HM.view === 'main' && !HM.goal && HM.sel == null))) return;
       document.dispatchEvent(new CustomEvent('mechcore:tabprepare', { detail: { tab: name } }));
+      prepMemo[name] = { rev: window.__fiRev | 0, t: performance.now() };
     }
 
     // Страница едет вместе с пальцем: текущая и соседняя вкладки двигаются синхронно.
     // Тот же механизм ведёт и нажатие на кнопку вкладки (без пальца, сразу доводка).
     const TX_MS = 400;                                   // нажатие на вкладку: длительность доводки
     const TX_EASE = 'cubic-bezier(.32, .72, 0, 1)';      // кривая iOS: быстрый старт, мягкое торможение
-    const TX = { on: false, cur: null, nb: null, name: null, side: 0, D: 0, x: 0, anims: null, commit: false, timer: 0 };
+    const TX = { on: false, cur: null, nb: null, name: null, side: 0, D: 0, x: 0, anims: null, commit: false, timer: 0, mo: null };
     const txTr = (x) => 'translate3d(' + x + 'px,0,0)';
+    // Кубическая кривая Безье как функция прогресса: нужна, чтобы знать, где страница на самом деле, не спрашивая у браузера
+    function cubicBezier(x1, y1, x2, y2) {
+      const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx, cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+      const X = (t) => ((ax * t + bx) * t + cx) * t, Y = (t) => ((ay * t + by) * t + cy) * t, dX = (t) => (3 * ax * t + 2 * bx) * t + cx;
+      return (x) => {
+        if (x <= 0) return 0; if (x >= 1) return 1;
+        let t = x;
+        for (let i = 0; i < 8; i++) { const e = X(t) - x; if (Math.abs(e) < 1e-5) return Y(t); const d = dX(t); if (Math.abs(d) < 1e-6) break; t -= e / d; }
+        let lo = 0, hi = 1; t = x;
+        for (let i = 0; i < 30; i++) { const e = X(t); if (Math.abs(e - x) < 1e-5) break; if (x > e) lo = t; else hi = t; t = (hi + lo) / 2; }
+        return Y(t);
+      };
+    }
+    const TX_P = cubicBezier(0.32, 0.72, 0, 1);          // то же, что TX_EASE
     const reducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
 
     // Ставит соседнюю вкладку рядом с текущей (side: +1 — справа, −1 — слева).
@@ -9275,21 +9295,24 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       let T = 0.2;
       for (let t = 0.2; t < 1.2; t += 1 / 120) if (Math.abs(y(t) * L) > 0.4) T = t;   // последний миг, когда оставалось больше 0,4 px
       T = Math.min(1.2, T + 1 / 60);
-      const n = 48, pts = [];
-      for (let i = 0; i < n; i++) pts.push((1 - y(T * i / n)).toFixed(4));
-      pts.push('1');
-      return { ms: Math.round(T * 1000), ease: 'linear(' + pts.join(',') + ')' };
+      const n = 48, num = [], pts = [];
+      for (let i = 0; i < n; i++) { const v = 1 - y(T * i / n); num.push(v); pts.push(v.toFixed(4)); }
+      num.push(1); pts.push('1');
+      // то же самое, что считает браузер для linear(): отрезками между точками
+      const p = (u) => { const f = Math.max(0, Math.min(1, u)) * n, i = Math.min(n - 1, Math.floor(f)); return num[i] + (num[i + 1] - num[i]) * (f - i); };
+      return { ms: Math.round(T * 1000), ease: 'linear(' + pts.join(',') + ')', p };
     }
     // Доводка: commit — вкладка долетает, иначе возвращается. vx — скорость пальца (px/мс); у нажатия на кнопку её нет.
     function txSettle(commit, vx) {
       TX.commit = commit && !!TX.nb;
-      paintTabs(TX.commit ? TX.name : activeTab);         // кнопки вкладок реагируют сразу
+      const want = TX.commit ? TX.name : activeTab;
+      if (painted !== want) paintTabs(want);              // кнопки вкладок реагируют сразу (если цель не изменилась, красить заново не нужно)
       if (!TX.cur.animate) { txDone(); return; }
       const x0 = TX.x, x1 = TX.commit ? -TX.side * TX.D : 0, L = x1 - x0;
-      let ms = TX_MS, ease = TX_EASE;
+      let ms = TX_MS, ease = TX_EASE, pf = TX_P;
       if (reducedMotion()) ms = 1;
       else if (Math.abs(L) < 0.5) { txDone(); return; }
-      else if (vx != null && SPRING_OK) { const sp = springCurve(L, vx, TX.commit ? 0.4 : 0.34, 0); ms = sp.ms; ease = sp.ease; }
+      else if (vx != null && SPRING_OK) { const sp = springCurve(L, vx, TX.commit ? 0.4 : 0.34, 0); ms = sp.ms; ease = sp.ease; pf = sp.p; }
       else ms = Math.round(Math.min(TX_MS + 40, Math.max(240, 200 + Math.abs(L) * 0.55)));   // без пружины: чем меньше осталось, тем короче
       const o = { duration: ms, easing: ease, fill: 'forwards' };
       const run = (el, a, b) => el.animate([{ transform: txTr(a) }, { transform: txTr(b) }], o);
@@ -9301,13 +9324,14 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       } else {
         TX.anims[0].onfinish = txDone;
       }
+      TX.mo = { x0, x1, ms, p: reducedMotion() ? () => 1 : pf };   // чтобы знать, где страница, не спрашивая у браузера
       TX.timer = setTimeout(txDone, ms + 100);            // страховка, если onfinish не придёт
     }
     function txDone() {
       if (!TX.on) return;
       clearTimeout(TX.timer);
       const { cur, nb, name, commit, anims } = TX, main = cur ? cur.parentElement : null;
-      TX.on = false; TX.anims = null; TX.cur = TX.nb = null;
+      TX.on = false; TX.anims = null; TX.cur = TX.nb = null; TX.mo = null;
 
       if (commit && name) {
         applyTab(name);
@@ -9318,7 +9342,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         if (nb) { nb.style.cssText = ''; nb.classList.add('hidden'); }
         if (cur) { cur.style.transform = ''; cur.style.willChange = ''; }
         if (main) { main.style.position = ''; main.style.overflowX = ''; }
-        paintTabs(activeTab);
+        if (painted !== activeTab) paintTabs(activeTab);
         preparedTab = null;
       }
 
@@ -9335,15 +9359,30 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       if (!t || t === 'none') return 0;
       try { return new DOMMatrixReadOnly(t).m41; } catch (e) { const m = /matrix\(([^)]+)\)/.exec(t); return m ? parseFloat(m[1].split(',')[4]) || 0 : 0; }
     }
+    // Где страница сейчас — по часам, а не по последнему кадру: если основной поток занят, вычисленный стиль отстаёт,
+    // и остановленная страница отскакивала бы назад. t — момент касания (как у performance.now)
+    function txPos(t) {
+      const mo = TX.mo, a = TX.anims && TX.anims[0];
+      if (mo && a) {
+        if (a.startTime == null) return mo.x0;            // кадр с началом анимации ещё не показан
+        const now = t == null ? performance.now() - 8 : t, tl = document.timeline.currentTime;   // «сейчас» минус полкадра: столько страница на экране отстаёт от часов
+        if (tl != null && now - tl > -60) {               // часы согласованы с шкалой анимаций (иначе доверять им нельзя)
+          const u = (now - a.startTime) / mo.ms;
+          if (u > -0.2 && u < 1.3) return mo.x0 + (mo.x1 - mo.x0) * mo.p(u);
+        }
+      }
+      return txNow(TX.cur);                               // метки времени не сходятся: берём вычисленный стиль
+    }
     // Прерывание: касание посреди доводки останавливает анимацию там, где страница сейчас, и её можно тут же тянуть.
-    // Возвращает { x — где остановилась, dest — ехала ли она к новой вкладке } или null, если останавливать нечего
-    // (или до конца осталось меньше 6 px: такой дотяг незаметен, касание проходит как обычно).
-    function txGrab() {
+    // Возвращает { x — где остановилась, dest — ехала ли она к новой вкладке } или null, если останавливать нечего.
+    // Ловится любой момент до самого конца: если дать анимации доехать, а потом сразу тянуть назад, вкладка дважды
+    // перестраивается подряд (завершение перехода и повторный показ), и именно на этом всё подтормаживало
+    function txGrab(t) {
       if (!TX.on || !TX.anims || !TX.cur) return null;
-      const x = txNow(TX.cur), x1 = TX.commit ? -TX.side * TX.D : 0;
-      if (Math.abs(x1 - x) < 6) return null;
+      const x = txPos(t), x1 = TX.commit ? -TX.side * TX.D : 0;
+      if (Math.abs(x1 - x) < 1) return null;              // доехала до пикселя: дальше всё как обычно
       const dest = TX.commit, anims = TX.anims;
-      clearTimeout(TX.timer); TX.timer = 0; TX.anims = null;
+      clearTimeout(TX.timer); TX.timer = 0; TX.anims = null; TX.mo = null;
       txMove(x);                                          // inline-стиль фиксирует страницу ровно там, где она была
       anims.forEach((a) => { a.onfinish = null; try { a.cancel(); } catch (e) { /* уже остановлена */ } });
       return { x, dest };
@@ -9366,7 +9405,9 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       txSettle(true);
     }
 
+    let painted = null;                                   // какая вкладка сейчас подсвечена в нижней панели
     function paintTabs(name) {
+      painted = name;
       TABS.forEach((id) => {
         const on = id === name, btn = document.getElementById('tabbtn-' + id);
         if (!btn) return;
@@ -9473,24 +9514,26 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         txSettle(!cancel && !!TX.nb && !back && (flick || Math.abs(x) > TX.D / 3), v);
       };
 
-      document.addEventListener('touchstart', (e) => {
+document.addEventListener('touchstart', (e) => {
         clickBlock = 0;
         g = null;
         const t = e.touches[0];
-        const ok = e.touches.length === 1 && !blocked()
-          && !(window.hmCradleZone && window.hmCradleZone(t, e.target))          // шары Ньютона: здесь горизонталь нужна им
-          && !(window.visualViewport && window.visualViewport.scale > 1.02)      // страница приближена
-          && !selecting() && !ownsHorizontal(e.target);
+        // дешёвые проверки сразу; те, что читают раскладку (блок, прокручиваемый вбок; шары), — только когда нужны, и один раз
+        const cheap = e.touches.length === 1 && !(window.visualViewport && window.visualViewport.scale > 1.02) && !blocked() && !selecting();
+        let fr; const free = () => (fr === undefined ? (fr = !ownsHorizontal(e.target) && !(window.hmCradleZone && window.hmCradleZone(t, e.target))) : fr);
         if (TX.on && TX.anims) {                            // страница ещё едет
           const el = e.target.closest ? e.target : e.target.parentElement;
           if (el && el.closest('#tabs')) return;            // кнопка вкладки: switchTab сам решит — продолжить, развернуть или начать заново
-          if (ok && !(el && el.closest(CONTROL))) {         // касание по свободному месту: страница замирает под пальцем там, где она сейчас
-            const gr = txGrab();
-            if (gr) { g = { x: t.clientX, y: t.clientY, axis: null, sign: 0, pts: [], grab: gr }; return; }
+          if (cheap && !(el && el.closest(CONTROL))) {      // касание по свободному месту: страница замирает под пальцем
+            const gr = txGrab();                            // сначала останавливаем (это только часы), потом проверяем: проверка читает раскладку и может занять время
+            if (gr) {
+              if (free()) { g = { x: t.clientX, y: t.clientY, axis: null, sign: 0, pts: [], grab: gr }; return; }
+              txSettle(gr.dest, 0); return;                 // схватили зря (шар или прокручиваемый блок): страница едет дальше, касание достаётся им
+            }
           }
         }
         txFinishNow();                                      // подхватить нельзя: прежний переход завершаем сразу, как раньше
-        if (!ok) return;
+        if (!cheap || !free()) return;
         g = { x: t.clientX, y: t.clientY, axis: null, sign: 0, pts: [] };
       }, { passive: true });
 
@@ -9997,6 +10040,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       return null;
     }
     function navSync() {
+      if (TX.on) { navSoon(); return; }                    // пока страница едет, историю браузера не трогаем: pushState и back тяжёлые
       const need = !!navStep();
       try {
         if (need && !navArmed) { history.pushState({ mcNav: 1 }, ''); navArmed = true; }
@@ -10016,7 +10060,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         if (step) step();
         navSoon();
       });
-      document.addEventListener('mechcore:tabchange', navSoon);
+      document.addEventListener('mechcore:tabchange', () => { clearTimeout(navT); navT = setTimeout(navSync, 300); });   // при серии быстрых переключений — один раз, когда всё стихло
       if (window.MutationObserver) {
         const mo = new MutationObserver(navSoon);
         ['tr-root', 'bl-root'].forEach((id) => { const n = $(id); if (n) mo.observe(n, { childList: true }); });
@@ -11149,12 +11193,21 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     el.classList.toggle('fade-r', max > 2 && x < max - 2);
     el.classList.toggle('fade-l', max > 2 && x > 2);
   }
-  function all() { ['hb-rail'].forEach(function (id) { upd(document.getElementById(id)); }); }
+  var queued = 0;
+  function all() {                                  // один раз за кадр и только если Справочник виден: чтение раскладки посреди смены вкладки обходится дорого
+    if (queued) return;
+    queued = requestAnimationFrame(function () {
+      queued = 0;
+      var tab = document.getElementById('tab-handbook');
+      if (tab && tab.classList.contains('hidden')) return;
+      ['hb-rail'].forEach(function (id) { upd(document.getElementById(id)); });
+    });
+  }
   function init() {
     ['hb-rail'].forEach(function (id) {
       var el = document.getElementById(id); if (!el) return;
       el.addEventListener('scroll', function () { upd(el); }, { passive: true });
-      if (window.MutationObserver) new MutationObserver(function () { upd(el); }).observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+      if (window.MutationObserver) new MutationObserver(all).observe(el, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     });
     window.addEventListener('resize', all);
     document.addEventListener('mechcore:tabchange', all);
@@ -12095,6 +12148,9 @@ html:root[data-theme] .th-scrim{transition:opacity .32s ease-out}
 @media (prefers-reduced-motion:reduce){
   html:root[data-theme] .th-scrim,html:root[data-theme] .th-panel,.sheet,.sheet .sheet-card,.spage:not(.onb){transition:none}
 }
+
+/* Первые карточки Справочника всегда отрисованы (см. fi-smooth-js) */
+#hb-list article.fi-eager{content-visibility:visible}
 </style>
 <script id="fi-smooth-js">
 /* Что раньше нагружало основной поток во время анимаций.
@@ -12118,6 +12174,41 @@ html:root[data-theme] .th-scrim{transition:opacity .32s ease-out}
     var zoom = function () { root.classList.toggle('fi-zoomed', vv.scale > 1.02); };
     vv.addEventListener('resize', zoom); zoom();
   }
+})();
+
+/* Счётчик записей в localStorage: по нему видно, менялось ли что-нибудь с прошлой подготовки вкладки (см. prepareTab) */
+(function () {
+  try {
+    var set = Storage.prototype.setItem; window.__fiRev = 0;
+    Storage.prototype.setItem = function () { window.__fiRev++; return set.apply(this, arguments); };
+  } catch (e) { /* без счётчика вкладки просто готовятся каждый раз, как раньше */ }
+})();
+
+/* Первые карточки Справочника не «засыпают» (content-visibility: auto): иначе при каждом въезде вкладки браузер сначала
+   рисует их при показе, потом «усыпляет», а при движении будит заново — двойная работа прямо посреди анимации. */
+(function () {
+  var list = document.getElementById('hb-list');
+  if (!list || !window.MutationObserver) return;
+  var K = 4, tagged = [], queued = 0;
+  function sync() {
+    queued = 0;
+    var want = [], a = list.querySelectorAll('article');
+    for (var i = 0; i < a.length && want.length < K; i++) if (!a[i].classList.contains('hidden') && !a[i].hidden) want.push(a[i]);
+    var same = want.length === tagged.length && want.every(function (e, i) { return e === tagged[i]; });
+    if (same) return;
+    tagged.forEach(function (e) { if (want.indexOf(e) < 0) e.classList.remove('fi-eager'); });
+    want.forEach(function (e) { e.classList.add('fi-eager'); });
+    tagged = want;
+  }
+  function later(muts) {
+    if (queued) return;
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      if (m.type === 'childList' || (m.target && m.target.tagName === 'ARTICLE')) { queued = requestAnimationFrame(sync); return; }
+    }
+  }
+  new MutationObserver(later).observe(list, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden'] });
+  sync();
 })();
 </script>
 </body>
