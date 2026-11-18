@@ -7859,7 +7859,8 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         a.dataset.r = '1'; if (hbIO) hbIO.unobserve(a); renderMath(a, HB_LAZY);
       }
     }
-    function hbWarmLater() { clearTimeout(hbWarmT); hbWarmT = setTimeout(hbWarm, 300); }
+    function hbWarmGo() { if (window.__fiBusy && window.__fiBusy()) { hbWarmT = setTimeout(hbWarmGo, 200); return; } hbWarm(); }   // идёт переход или палец на экране: дорисовка подождёт
+    function hbWarmLater() { clearTimeout(hbWarmT); hbWarmT = setTimeout(hbWarmGo, 300); }
     // Фоновая отрисовка формул. Карточки дорисовываются по одной, пока приложение простаивает, поэтому при
     // переключении темы всё уже готово и браузеру не нужно рисовать пачку разом. Начинаем после заставки и
     // проверки плавности фона (иначе наша работа сошла бы за «рывки» и фон остановился); пока листают — ждём.
@@ -9199,19 +9200,26 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     const TAB_CLASS_ACTIVE = ['tab-on'];
     const TAB_CLASS_IDLE = ['tab-off'];
     let activeTab = 'home';
+    const TAB_SCROLL = {};                              // где оставили каждую вкладку (прокрутка страницы, px)
     // Содержимое вкладки обновляется ДО того, как она показана (иначе после свайпа страница перерисовывается на глазах).
     // Событие 'mechcore:tabprepare' (detail: { tab }) приходит один раз за переход, пока вкладка ещё скрыта.
     let preparedTab = null;
     const prepMemo = {};                                  // когда и при каком состоянии вкладку готовили в прошлый раз
-    function prepareTab(name) {
-      if (preparedTab === name) return;
-      preparedTab = name;
+    const PREP_TTL = 60000;                             // дольше этого вкладку готовят заново, даже если хранилище не менялось
+    const prepDay = () => (typeof today === 'function' ? today() : '');
+    function prepFresh(name) {                          // вкладка уже подготовлена, и с тех пор ничего не изменилось
+      const m = prepMemo[name];
+      return !!m && m.rev === (window.__fiRev | 0) && m.day === prepDay() && performance.now() - m.t < PREP_TTL
+        && (name !== 'home' || (HM.view === 'main' && !HM.goal && HM.sel == null));
+    }
+    function prepareTab(name, warm) {                   // warm: подготовка про запас, пока вкладка ещё не нужна (см. «Соседние вкладки наготове»)
+      if (!warm) { if (preparedTab === name) return false; preparedTab = name; }
       // Быстрые переключения туда-сюда: вкладку только что готовили и ничего не менялось (рев. хранилища та же) —
       // не пересобираем Главную и не «поднимаем» карточки заново: иначе каждый разворот пересчитывает всё это впустую
-      const m = prepMemo[name], now = performance.now();
-      if (m && m.rev === (window.__fiRev | 0) && now - m.t < 5000 && (name !== 'home' || (HM.view === 'main' && !HM.goal && HM.sel == null))) return;
-      document.dispatchEvent(new CustomEvent('mechcore:tabprepare', { detail: { tab: name } }));
-      prepMemo[name] = { rev: window.__fiRev | 0, t: performance.now() };
+      if (prepFresh(name)) return false;
+      document.dispatchEvent(new CustomEvent('mechcore:tabprepare', { detail: { tab: name, warm: !!warm } }));
+      prepMemo[name] = { rev: window.__fiRev | 0, t: performance.now(), day: prepDay() };
+      return true;                                        // содержимое могло измениться
     }
 
     // Страница едет вместе с пальцем: текущая и соседняя вкладки двигаются синхронно.
@@ -9238,16 +9246,12 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
 
     // Ставит соседнюю вкладку рядом с текущей (side: +1 — справа, −1 — слева).
     // Она встаёт под шапку на уровне экрана, даже если текущая вкладка прокручена вниз, и обрезана по высоте экрана.
-    function txPlace(name) {
+    function txPlace(name, bx0) {
       const cur = TX.cur, nb = document.getElementById('tab-' + name), main = cur.parentElement;
-      const hd = document.querySelector('.hd'), hb = hd ? hd.getBoundingClientRect().bottom : 0;
-      const cr = cur.getBoundingClientRect(), mr = main.getBoundingClientRect();
-      const pad = cr.top - mr.top;                        // верхний отступ main
-      const top = hb + pad - mr.top;
-      const room = Math.max(200, window.innerHeight - hb - pad);
-      prepareTab(name);
-      nb.classList.remove('hidden');
-      nb.style.cssText = 'position:absolute;top:' + top + 'px;left:' + (cr.left - mr.left) + 'px;width:' + cr.width + 'px;max-height:' + room + 'px;overflow:hidden;will-change:transform;transform:' + txTr(TX.x + TX.side * TX.D);
+      const bx = bx0 || nbBox(name, cur, main);
+      const rebuilt = prepareTab(name);                   // вкладка, подготовленная заранее (см. «Соседние вкладки наготове»), здесь ничего не пересобирает
+      nb.classList.remove('hidden');                      // data-warm, inert и aria-hidden остаются до фиксации перехода: их снятие пересчитало бы стили всей вкладки
+      tabLay(nb, bx, txTr(TX.x + TX.side * TX.D), rebuilt);   // если слой уже так стоит, меняется только сдвиг
       TX.nb = nb;
     }
     function txStart(name, side) {
@@ -9256,12 +9260,13 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       const cr = cur.getBoundingClientRect();
       const winW = document.documentElement.clientWidth || window.innerWidth;
       TX.D = Math.max(cr.width, Math.min(winW, cr.width + 48));
-      main.style.position = 'relative'; main.style.overflowX = 'clip';
+      const bx = name ? nbBox(name, cur, main) : null;    // все замеры до записи стилей: раскладка считается один раз, а не посреди вызова
+      main.style.overflowX = 'clip';                      // position:relative здесь больше не нужен: сосед стоит на position:fixed
       cur.style.willChange = 'transform';
-      if (name) txPlace(name);
+      if (name) txPlace(name, bx);
     }
     function txSetSide(side) {                            // палец перешёл через ноль: соседняя вкладка меняется
-      if (TX.nb) { TX.nb.style.cssText = ''; TX.nb.classList.add('hidden'); TX.nb = null; }
+      if (TX.nb) { tabPark(TX.nb, TX.side); TX.nb = null; }   // прежний сосед не прячется, а ждёт наготове за краем экрана
       const name = TABS[TABS.indexOf(activeTab) + side] || null;
       TX.name = name; TX.side = side;
       if (name) txPlace(name);
@@ -9330,20 +9335,22 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     function txDone() {
       if (!TX.on) return;
       clearTimeout(TX.timer);
-      const { cur, nb, name, commit, anims } = TX, main = cur ? cur.parentElement : null;
+      const { cur, nb, name, commit, anims, side } = TX, main = cur ? cur.parentElement : null;
       TX.on = false; TX.anims = null; TX.cur = TX.nb = null; TX.mo = null;
 
       if (commit && name) {
-        applyTab(name);
+        applyTab(name, true);
         if (cur) { cur.style.transform = ''; cur.style.willChange = ''; }
-        if (nb) nb.style.cssText = '';
+        if (nb) tabClear(nb);
         if (main) { main.style.position = ''; main.style.overflowX = ''; }
+        restoreTabScroll(name);
       } else {
-        if (nb) { nb.style.cssText = ''; nb.classList.add('hidden'); }
+        if (nb) tabPark(nb, side);                        // переход отменён: сосед остаётся наготове за краем экрана
         if (cur) { cur.style.transform = ''; cur.style.willChange = ''; }
         if (main) { main.style.position = ''; main.style.overflowX = ''; }
         if (painted !== activeTab) paintTabs(activeTab);
         preparedTab = null;
+        warmSoon(160);
       }
 
       (anims || []).forEach((a) => { try { a.cancel(); } catch (e) { /* уже остановлена */ } });
@@ -9400,7 +9407,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       txFinishNow();
       const out = document.getElementById('tab-' + activeTab), inn = document.getElementById('tab-' + name);
       if (name === activeTab || !out || !inn || !out.animate || reducedMotion()) { applyTab(name); return; }
-      if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'instant' });
+      // прокрутку не сбрасываем: уходящая страница остаётся на месте, а положение запоминает applyTab
       txStart(name, TABS.indexOf(name) > TABS.indexOf(activeTab) ? 1 : -1);
       txSettle(true);
     }
@@ -9442,19 +9449,124 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       el.classList.remove('on');
       HDT.timer = setTimeout(show, 150);
     }
-    function applyTab(name) {
+    function restoreTabScroll(name) {                   // вкладка возвращается туда, где её оставили
+      const want = TAB_SCROLL[name] || 0;
+      if (Math.abs(window.scrollY - want) > 0.5) window.scrollTo({ top: want, behavior: 'auto' });
+    }
+    function applyTab(name, late) {
       const prev = activeTab, sy = window.scrollY;   // прокрутка читается до смены вкладок, пока раскладка актуальна
-      if (prev !== name) prepareTab(name);
+      if (prev !== name) {
+        TAB_SCROLL[prev] = sy;                              // запоминаем, где вкладку оставили
+        prepareTab(name);
+      }
       activeTab = name;
       paintTabs(name);
-      TABS.forEach((id) => { const p = document.getElementById('tab-' + id); if (p) p.classList.toggle('hidden', id !== name); });
+      TABS.forEach((id) => { const p = document.getElementById('tab-' + id); if (p) { p.classList.toggle('hidden', id !== name); if (id === name) tabClear(p); } });
       syncRun();
       if (prev !== name) {
-        if (sy > 0) window.scrollTo({ top: 0, behavior: 'auto' });
+        if (!late) restoreTabScroll(name);                // при переходе со сдвигом это сделает txDone: пока он не закончен, раскладка ещё не настоящая (вкладка в потоке одна, и та скрыта)
+        WARM.prev = prev;
         document.dispatchEvent(new CustomEvent('mechcore:tabchange', { detail: { tab: name, prev } }));
+        warmSoon(160);
       }
       preparedTab = null;
     }
+
+    // ───────── Соседние вкладки наготове ─────────
+    // Пока телефон свободен, соседние вкладки готовятся заранее: содержимое обновлено, раскладка сделана, слой стоит за краем
+    // экрана ровно там, где его ставит txPlace. Свайп только сдвигает готовый слой: ни пересборки, ни пустоты сбоку.
+    // Вкладка при этом остаётся с классом hidden (остальной код считает её скрытой), а показывает её атрибут data-warm (см. CSS fi-warm).
+    // Сосед стоит на position:fixed под шапкой, от прокрутки текущей страницы это не зависит, поэтому раскладка не устаревает.
+    const WARM = { t: 0, tok: 0, prev: null };
+    const warmAllowed = () => !reducedMotion();
+    // Раскладка соседней вкладки: где она под шапкой, какой высоты и насколько прокручена; D — сдвиг до края экрана
+    function nbBox(name, cur, main) {
+      const hd = document.querySelector('.hd'), hb = hd ? hd.getBoundingClientRect().bottom : 0;
+      const hdPos = hd ? getComputedStyle(hd).position : 'fixed', pinned = hdPos === 'sticky' || hdPos === 'fixed';   // шапка может уезжать вместе со страницей
+      const cr = cur.getBoundingClientRect(), mr = main.getBoundingClientRect();
+      const pad = cr.top - mr.top;                        // верхний отступ main
+      const sv = TAB_SCROLL[name] || 0;                   // где вкладку оставили в прошлый раз
+      const doc0 = cr.top + window.scrollY;               // где в документе начинается содержимое вкладки
+      // Шапка закреплена: сосед стоит под ней. Шапка уезжает со страницей: её край с экрана брать нельзя (после глубокой прокрутки он уходит в минус и сосед оказывался за экраном), считаем по документу
+      const top = pinned ? hb + Math.max(0, pad - sv) : Math.max(0, doc0 - sv);
+      const room = Math.max(200, window.innerHeight - top);
+      const winW = document.documentElement.clientWidth || window.innerWidth;
+      return {
+        css: 'position:fixed;top:' + top + 'px;left:' + cr.left + 'px;width:' + cr.width + 'px;max-height:' + room + 'px;overflow:hidden;will-change:transform;padding-bottom:' + getComputedStyle(main).paddingBottom,
+        st: pinned ? Math.max(0, sv - pad) : Math.max(0, sv - doc0),
+        D: Math.max(cr.width, Math.min(winW, cr.width + 48)),
+      };
+    }
+    // Ставит вкладку на место. Стиль переписывается только если раскладка изменилась: иначе слою не мешаем
+    function tabLay(el, bx, tf, verify) {
+      if (el._fiCss !== bx.css) { el.style.cssText = bx.css; el._fiCss = bx.css; el._fiST = NaN; }
+      if (tf) el.style.transform = tf;
+      // чтение scrollTop вынуждает раскладку: при свайпе его пропускаем, если вкладку не пересобирали и прокрутка слоя уже верная
+      if (verify || el._fiST !== bx.st) { if (Math.abs(el.scrollTop - bx.st) > 0.5) el.scrollTop = bx.st; el._fiST = bx.st; }
+    }
+    function tabClear(el) {                               // вкладка снова обычная: в потоке, без служебных стилей и пометок
+      el.style.cssText = ''; el._fiCss = ''; el._fiST = NaN;
+      ['data-warm', 'inert', 'aria-hidden'].forEach((a) => el.removeAttribute(a));
+    }
+    // Вкладка выходит из перехода и ждёт наготове за краем экрана на своей стороне (side: +1 справа, −1 слева)
+    function tabPark(el, side, D) {
+      if (!warmAllowed() || !el._fiCss) { tabClear(el); el.classList.add('hidden'); return; }
+      el.style.transform = txTr(side * (D || TX.D));
+      el.setAttribute('data-warm', ''); el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true');
+      el.classList.add('hidden');
+    }
+    function tabCool(id) {                                // вкладка больше не сосед: снова прячем, слой освобождается
+      const el = document.getElementById('tab-' + id);
+      if (el && el.hasAttribute('data-warm')) { tabClear(el); el.classList.add('hidden'); }
+    }
+    function tabWarm(name) {
+      const el = document.getElementById('tab-' + name), cur = document.getElementById('tab-' + activeTab);
+      if (!el || !cur || el === cur || TX.on) return;
+      prepareTab(name, true);                             // обычно уже сделано отдельным шагом (см. warmRun)
+      const bx = nbBox(name, cur, cur.parentElement), side = TABS.indexOf(name) > TABS.indexOf(activeTab) ? 1 : -1;
+      el.classList.add('hidden');
+      el.setAttribute('data-warm', ''); el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true');
+      tabLay(el, bx, txTr(side * bx.D), true);
+    }
+    // Занят ли телефон жестом: палец на экране, идёт переход или прокрутка, на экране задание. Тогда фоновая работа ждёт
+    let fingers = 0, quietAt = 0;
+    const warmBump = () => { quietAt = performance.now() + 220; };
+    ['scroll', 'touchmove', 'wheel'].forEach((t) => window.addEventListener(t, warmBump, { passive: true, capture: true }));
+    document.addEventListener('touchstart', (e) => { fingers = e.touches.length; warmBump(); }, { passive: true, capture: true });
+    ['touchend', 'touchcancel'].forEach((t) => document.addEventListener(t, (e) => { fingers = e.touches.length; warmBump(); }, { passive: true, capture: true }));
+    const warmBusy = () => TX.on || fingers > 0 || performance.now() < quietAt || BL.running || document.documentElement.classList.contains('tr-run');
+    window.__fiBusy = warmBusy;
+    const warmIdle = (fn) => (window.requestIdleCallback ? requestIdleCallback(fn, { timeout: 900 }) : setTimeout(fn, 80));
+    function warmSoon(ms) { clearTimeout(WARM.t); WARM.t = setTimeout(warmRun, ms == null ? 600 : ms); }
+    window.__fiWarmSoon = () => warmSoon(700);           // вызывается при каждой записи в хранилище (см. счётчик в конце файла)
+    function warmRun() {
+      const tok = ++WARM.tok;
+      if (!warmAllowed()) { TABS.forEach((id) => { if (id !== activeTab) tabCool(id); }); return; }
+      if (document.hidden) return;                        // вернёмся по visibilitychange
+      // после заставки и проверки плавности фона (иначе наша работа сошла бы за «рывки» и фон остановился)
+      if (document.getElementById('splash') || (!window.fxProbed && performance.now() < 6000)) { warmSoon(500); return; }
+      const i = TABS.indexOf(activeTab);
+      // та, с которой только что ушли, — первой: назад возвращаются чаще всего именно туда
+      const want = [TABS[i - 1], TABS[i + 1]].filter(Boolean).sort((a, b) => (b === WARM.prev) - (a === WARM.prev));
+      TABS.forEach((id) => { if (id !== activeTab && !want.includes(id)) tabCool(id); });
+      // обновить содержимое и показать слой — разные шаги: пока вкладка скрыта, обновление дёшево (раскладка не нужна), дорог только показ
+      const jobs = [];
+      want.forEach((n) => { jobs.push(() => { if (n !== activeTab && !TX.on) prepareTab(n, true); }); jobs.push(() => tabWarm(n)); });
+      let k = 0;
+      const step = () => {
+        if (tok !== WARM.tok) return;
+        if (warmBusy() || document.hidden) { WARM.t = setTimeout(() => { if (tok === WARM.tok) warmIdle(step); }, 300); return; }
+        const job = jobs[k++];
+        if (job) job();
+        if (k < jobs.length) warmIdle(step);
+        else WARM.t = setTimeout(warmRun, PREP_TTL - 10000);   // раз в минуту освежаем, пока телефон свободен
+      };
+      warmIdle(step);
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) warmSoon(300); });
+    window.addEventListener('resize', () => warmSoon(400), { passive: true });
+    document.addEventListener('fx:probed', () => warmSoon(300), { once: true });
+    warmSoon(1500);
 
     // ───────── Свайпы между вкладками ─────────
     // Свайп влево — следующая вкладка, вправо — предыдущая (Справочник · Тренажёр · Блиц).
@@ -9533,8 +9645,8 @@ document.addEventListener('touchstart', (e) => {
           }
         }
         txFinishNow();                                      // подхватить нельзя: прежний переход завершаем сразу, как раньше
-        if (!cheap || !free()) return;
-        g = { x: t.clientX, y: t.clientY, axis: null, sign: 0, pts: [] };
+        if (!cheap) return;
+        g = { x: t.clientX, y: t.clientY, axis: null, sign: 0, pts: [], free };
       }, { passive: true });
 
       document.addEventListener('touchmove', (e) => {
@@ -9552,7 +9664,7 @@ document.addEventListener('touchstart', (e) => {
             g.axis = 'x'; g.sign = dx < 0 ? -1 : 1;
           } else {
             if (Math.abs(dx) < LOCK && Math.abs(dy) < LOCK) return;
-            if (Math.abs(dx) <= Math.abs(dy) * RATIO || blocked() || selecting()) { g = null; return; } // вертикальная прокрутка: не мешаем
+            if (Math.abs(dx) <= Math.abs(dy) * RATIO || blocked() || selecting() || !g.free()) { g = null; return; } // вертикальная прокрутка: не мешаем
             g.axis = 'x'; g.sign = dx < 0 ? -1 : 1;
             txStart(TABS[TABS.indexOf(activeTab) - g.sign] || null, -g.sign);
           }
@@ -9587,8 +9699,9 @@ document.addEventListener('touchstart', (e) => {
         if (ab) requestAnimationFrame(() => rl.scrollTo({ left: Math.max(0, ab.offsetLeft - (rl.clientWidth - ab.offsetWidth) / 2), behavior: first ? 'auto' : 'smooth' })); }
       if (!same) { hbBuild(); hbFilterUI(); hbRender(); TR.mode = 'cat'; trMenu(true); if (!BL.running) blMenu(); }
       if (!first && !window.__secStay) {
+        TAB_SCROLL.handbook = 0;                           // новый раздел открывается с начала
         switchTab('handbook');
-        window.scrollTo({ top: 0, behavior: 'auto' });
+        if (activeTab === 'handbook') window.scrollTo({ top: 0, behavior: 'auto' });
         if (window.fx2 && fx2.riseHB) fx2.riseHB();
       }
     }
@@ -9747,9 +9860,10 @@ document.addEventListener('touchstart', (e) => {
       const W = 320, H = Math.round((P.total ? (tall ? 150 : 112) : 76) * (P.per === 'all' ? 1.25 : 1)), X0 = 14, Y0 = 30, Y1 = H - 10;
       const N = P.bars.length, mx = Math.max(1, ...P.bars.map((b) => b.n)), dx = N > 1 ? (W - 2 * X0) / (N - 1) : 0;
       const pts = P.bars.map((b, i) => ({ x: X0 + i * dx, y: Y1 - b.n / mx * (Y1 - Y0), b, i })), live = pts.filter((q) => !q.b.f);
-      const key = P.per + (tall ? 'T' : 'M'), anim = HM.drawn !== key; HM.drawn = key;
       const sp = HM.sel != null ? live.find((q) => q.i === HM.sel) : null; if (!sp) HM.sel = null;
       const gid = 'hmg' + (++HM_GID), line = hmCurve(live), first = live[0], last = live[live.length - 1], today = live.find((q) => q.b.t);
+      // Линия рисуется, когда график показан впервые или изменились сами данные (другой период, другие точки), а не при каждой пересборке Главной
+      const key = P.per + (tall ? 'T' : 'M') + '|' + line, anim = HM.drawn !== key; HM.drawn = key;
       const area = line ? `<path class="hm-ln-a" d="${line}L${hmR(last.x)},${Y1}L${hmR(first.x)},${Y1}Z" fill="url(#${gid})"/>` : '';
       const stroke = line ? `<path class="hm-ln-l" pathLength="1" d="${line}"/>` : '';
       const dots = today ? `<circle class="hm-ln-d hm-ln-th" cx="${hmR(today.x)}" cy="${hmR(today.y)}" r="7"/><circle class="hm-ln-d hm-ln-t" cx="${hmR(today.x)}" cy="${hmR(today.y)}" r="3.6"/>` : '';
@@ -9798,7 +9912,12 @@ document.addEventListener('touchstart', (e) => {
     const stScreen = () => `<div class="tr-bar"><button type="button" data-hm="back" class="tr-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button><h2 class="tr-mt">Статистика</h2><span class="tr-gap" aria-hidden="true"></span></div>${stActivity()}${stAccuracy()}`;
     function homeRender() {
       const r = $('home-root'); if (!r) return;
-      r.innerHTML = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : hmGoal() + dsCardHTML() + hmStatsHTML() + hmLearnHTML()}</div>`;
+      const html = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : hmGoal() + dsCardHTML() + hmStatsHTML() + hmLearnHTML()}</div>`;
+      // Данные те же — экран тот же: DOM не трогаем (ни раскладки, ни рывка, ни повторной анимации, шары колыбели остаются как были).
+      // id градиента графика и класс anim при каждой сборке свои, в сравнение они не идут
+      const sig = html.replace(/hmg\d+/g, 'hmg').replace('class="hm-ln anim"', 'class="hm-ln"');
+      if (r._fiSig === sig) return;
+      r._fiSig = sig; r.innerHTML = html;
     }
     function hmClick(e) {
       const m = e.target.closest('[data-s2="ds-more"]'); if (m) { switchTab('trainer'); dsStart(true); return; }
@@ -9822,7 +9941,22 @@ document.addEventListener('touchstart', (e) => {
       initHbView();
       homeRender();
       $('home-root').addEventListener('click', hmClick); $('home-root').addEventListener('change', hmChange);
-      document.addEventListener('mechcore:tabprepare', (e) => { if (e.detail.tab === 'home') { HM.view = 'main'; HM.goal = false; HM.sel = null; HM.drawn = null; homeRender(); } });
+      // Линия графика рисуется один раз. Доиграла — класс anim снимаем: иначе она рисовалась бы заново при каждом показе Главной
+      // (скрытая вкладка — это display:none, а у такого элемента CSS-анимации стартуют с начала)
+      $('home-root').addEventListener('animationend', (e) => {
+        const ln = e.target.closest && e.target.closest('.hm-ln.anim');
+        if (!ln) return;
+        requestAnimationFrame(() => {
+          const going = ln.getAnimations ? ln.getAnimations({ subtree: true }).some((a) => a.playState === 'running' || a.pending) : false;
+          if (!going && ln.isConnected) ln.classList.remove('anim');
+        });
+      });
+      document.addEventListener('mechcore:tabprepare', (e) => {
+        if (e.detail.tab !== 'home') return;
+        if (HM.sel != null) { try { hmSel(null); } catch (err) { /* подсказки уже нет */ } }   // подсказка выставляется прямо в DOM: если данные те же, перерисовка её не сотрёт
+        HM.view = 'main'; HM.goal = false; HM.sel = null;
+        homeRender();
+      });
       document.addEventListener('click', (e) => {
         const t = e.target;
         if (t.closest('[data-bl-set]')) { e.stopPropagation(); blMenu(); return; }
@@ -10053,6 +10187,8 @@ document.addEventListener('touchstart', (e) => {
     }
     function navSoon() { clearTimeout(navT); navT = setTimeout(navSync, 60); }
     function initBackNav() {
+      // Положением страницы управляем сами: иначе history.back() в navSync (через 0,3 с после прихода на Главную) заставляет браузер вернуть прокрутку в старое положение, то есть наверх
+      try { history.scrollRestoration = 'manual'; } catch (e) { /* не страшно */ }
       window.addEventListener('popstate', () => {
         if (navSkip) { navSkip = false; return; }
         navArmed = false;
@@ -11112,7 +11248,7 @@ document.addEventListener('touchstart', (e) => {
     else if (n === 'trainer') riseRoot('tr-root');
     else if (n === 'blitz') riseRoot('bl-root');
   }
-  document.addEventListener('mechcore:tabprepare', function (e) { requestAnimationFrame(function () { riseTab(e.detail.tab); }); });
+  document.addEventListener('mechcore:tabprepare', function (e) { if (e.detail && e.detail.warm) return; requestAnimationFrame(function () { riseTab(e.detail.tab); }); });   // вкладка, готовая заранее, приезжает целиком: подъём карточек ей не нужен
 
   // «Выучено»: галочка рисуется линией
   function learned(b) {
@@ -11537,7 +11673,7 @@ document.addEventListener('touchstart', (e) => {
   }
   function kick() { if (!st.raf) { st.last = performance.now(); st.raf = requestAnimationFrame(loop); } }
   function homeHidden() { var h = document.getElementById('tab-home'); return !!h && h.classList.contains('hidden'); }
-  document.addEventListener('mechcore:tabchange', function (e) { if (e.detail && e.detail.tab === 'home') kick(); });
+  document.addEventListener('mechcore:tabchange', function (e) { if (e.detail && e.detail.tab === 'home') setTimeout(function () { if (!homeHidden()) kick(); }, 150); });   // шары оживают, когда переход уже закончен
 
   // вступление: один раз, когда шары впервые появились на экране
   var iv = setInterval(function () {
@@ -11601,7 +11737,17 @@ document.addEventListener('touchstart', (e) => {
   // слушатель, который может отменять прокрутку, висит только на Главной, а не на всём документе: остальные вкладки прокручиваются без ожидания
   (function () {
     var home = document.getElementById('tab-home');
-    if (home) home.addEventListener('touchmove', function (e) { if (st.drags.length && e.cancelable) e.preventDefault(); }, { passive: false, capture: true });
+    if (home) {
+      // Слушатель, который может отменять прокрутку, висит только на самом рисунке колыбели, а не на всей Главной:
+      // иначе браузер в начале любой прокрутки и любого свайпа ждал бы ответа JavaScript. Рисунок пересоздаётся при перерисовке Главной — слушатель ставится заново
+      var stopScroll = function (e) { if (st.drags.length && e.cancelable) e.preventDefault(); };
+      var hookCradle = function () {
+        var th = home.querySelector('.hm-nc-th'), svg = th && th.closest('svg');
+        if (svg && !svg._fiStop) { svg._fiStop = 1; svg.addEventListener('touchmove', stopScroll, { passive: false, capture: true }); }
+      };
+      hookCradle();
+      new MutationObserver(hookCradle).observe(home, { childList: true, subtree: true });
+    }
   })();
   // при отпускании шар уходит со своей скоростью (она уже учла запаздывание за пальцем), уменьшенной и с потолком по энергии;
   // шары, которые рука несла перед собой, уходят вместе с ней
@@ -12152,6 +12298,13 @@ html:root[data-theme] .th-scrim{transition:opacity .32s ease-out}
 /* Первые карточки Справочника всегда отрисованы (см. fi-smooth-js) */
 #hb-list article.fi-eager{content-visibility:visible}
 </style>
+<style id="fi-warm">
+/* Вкладка-сосед ждёт наготове за краем экрана. Класс hidden остаётся (остальной код считает её скрытой),
+   а показывает её атрибут data-warm: браузер заранее раскладывает и рисует слой. Нажать на неё нельзя (inert);
+   у Главной анимации стоят, пока слой не выехал на экран: график дорисуется на глазах, а не за кадром */
+main>section.hidden[data-warm]{display:block}
+main>section#tab-home.hidden[data-warm] *,main>section#tab-home.hidden[data-warm] *::before,main>section#tab-home.hidden[data-warm] *::after{animation-play-state:paused!important}
+</style>
 <script id="fi-smooth-js">
 /* Что раньше нагружало основной поток во время анимаций.
    1) Два CSS-правила с :has() на корне страницы заставляли браузер пересчитывать стили документа при каждом изменении в DOM,
@@ -12180,7 +12333,7 @@ html:root[data-theme] .th-scrim{transition:opacity .32s ease-out}
 (function () {
   try {
     var set = Storage.prototype.setItem; window.__fiRev = 0;
-    Storage.prototype.setItem = function () { window.__fiRev++; return set.apply(this, arguments); };
+    Storage.prototype.setItem = function () { window.__fiRev++; if (window.__fiWarmSoon) window.__fiWarmSoon(); return set.apply(this, arguments); };
   } catch (e) { /* без счётчика вкладки просто готовятся каждый раз, как раньше */ }
 })();
 
