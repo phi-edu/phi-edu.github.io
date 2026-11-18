@@ -1670,13 +1670,6 @@ button.hdb::before,button.thsw::before{content:"";position:absolute;inset:-5px}
 .s2-dr small{display:block;margin-top:.15rem;font-size:0.75rem;line-height:1.35;color:var(--mu)}
 .s2-dr:disabled{opacity:.55;pointer-events:none}
 .s2-dr>span:last-child{flex:none;text-align:right}
-.s2-switch{display:flex;width:100%;align-items:center;justify-content:space-between;gap:.75rem;padding:.8rem 1rem;border-radius:16px;background:var(--sf);box-shadow:inset 0 0 0 1px var(--ln);text-align:left}
-.s2-switch b{display:block;font-size:1rem;font-weight:600;color:var(--t1)}
-.s2-switch small{display:block;font-size:0.75rem;color:var(--mu);margin-top:.1rem}
-.s2-switch i{flex:none;position:relative;width:2.6rem;height:1.5rem;border-radius:999px;background:var(--ln);transition:background-color .18s}
-.s2-switch i::after{content:"";position:absolute;top:.2rem;left:.2rem;width:1.1rem;height:1.1rem;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .18s ease-out}
-.s2-switch.on i{background:var(--acc)}
-.s2-switch.on i::after{transform:translateX(1.1rem)}
 .ct-clock{font-variant-numeric:tabular-nums;color:var(--t1);font-weight:600}
 .ct-clock.low{color:var(--rd)}
 .s2-ach{margin-top:1rem}
@@ -1716,17 +1709,6 @@ button.hdb::before,button.thsw::before{content:"";position:absolute;inset:-5px}
 #s2-toast.on{opacity:1;transform:translate(-50%,0)}
 #s2-hbbar{display:grid;gap:.5rem}
 #s2-hbbar[hidden]{display:none}
-.onb{z-index:95}
-.onb-in{padding-top:2.5rem;text-align:center}
-.onb-h{font-size:1.73rem;letter-spacing:-.02em;line-height:1.15;font-weight:700;color:var(--t1)}
-.onb-p{margin:.4rem 0 1.2rem}
-.onb-list{display:grid;gap:.6rem;text-align:left}
-.onb-b{text-align:left;display:grid;grid-template-columns:1fr auto;gap:.15rem .75rem;align-items:center;padding:.9rem 1rem;border-radius:16px;background:var(--sf);box-shadow:inset 0 0 0 1px var(--ln)}
-.onb-b b{font-size:1rem;color:var(--t1)}
-.onb-b span{grid-column:1;font-size:0.875rem;line-height:1.35;color:var(--mu)}
-.onb-b i{grid-row:1/3;grid-column:2;font-style:normal;font-size:0.75rem;color:var(--mu);font-variant-numeric:tabular-nums}
-.onb-b:active{box-shadow:inset 0 0 0 1.5px var(--acc)}
-.s2-lv{margin-top:.5rem}
 .s2-note{margin-top:.55rem;line-height:1.4}
 .s2-gap{margin-top:.6rem}
 .s2-sel{margin-top:.5rem;appearance:auto}
@@ -1818,7 +1800,7 @@ html:root[data-theme="dark"] #bg{background-color:color-mix(in srgb,var(--acc-s)
 html:root[data-theme="dark"] #bg::after{opacity:.06;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n' x='0' y='0' width='100%25' height='100%25'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
 
-/* ── Главная: «Сегодня» и чип цели: стили в блоке fi-home-1 ниже ── */
+/* ── Главная: «Сегодня»: стили в блоке fi-home-1 ниже ── */
 .hm-hero{gap:1rem;padding:1.15rem}
 
 .hm-bar{display:block;height:5px;border-radius:3px;background:var(--ln);overflow:hidden}
@@ -1898,11 +1880,11 @@ html:root[data-theme] .text-2xl{font-size:var(--fs-h1)}
 html:root[data-theme] .font-semibold,html:root[data-theme] .font-bold{font-weight:600}
 html:root[data-theme] .font-medium{font-weight:400}
 /* заголовок экрана 22/700 */
-html:root[data-theme] .sec-head,html:root[data-theme] .sp-title,html:root[data-theme] .tr-mt,html:root[data-theme] .onb-h{font-size:var(--fs-h1);font-weight:700;line-height:1.2;color:var(--tx);letter-spacing:0}
+html:root[data-theme] .sec-head,html:root[data-theme] .sp-title,html:root[data-theme] .tr-mt{font-size:var(--fs-h1);font-weight:700;line-height:1.2;color:var(--tx);letter-spacing:0}
 /* название строки или плитки 17/600 */
 html:root[data-theme] .ds-title,html:root[data-theme] .tt-name,
 html:root[data-theme] .tr-err-t b,html:root[data-theme] #hb-list article>h3,html:root[data-theme] .fhead b,
-html:root[data-theme] .sp-item,html:root[data-theme] .sp-item span,html:root[data-theme] .onb-b b,html:root[data-theme] .sp-name,
+html:root[data-theme] .sp-item,html:root[data-theme] .sp-item span,html:root[data-theme] .sp-name,
 html:root[data-theme] .hm-hero .ds-title,html:root[data-theme] .hm-st .ds-title,html:root[data-theme] .hm-learn .ds-title,html:root[data-theme] .hm-weak .ds-title,html:root[data-theme] .hm-secs .ds-title{font-size:var(--fs-h2);font-weight:600;line-height:1.3;color:var(--tx);letter-spacing:0}
 html:root[data-theme] .tt-n{font-size:var(--fs-h2);font-weight:600;letter-spacing:0;color:var(--t1)}
 html:root[data-theme] .tr-err-n{font-size:var(--fs-h2);font-weight:600;color:var(--rd)}
@@ -1914,13 +1896,13 @@ html:root[data-theme] details>summary[class],html:root[data-theme] #hb-list arti
 html:root[data-theme] small,html:root[data-theme] .ds-streak,
 html:root[data-theme] .tt-l,html:root[data-theme] .tt-sub,html:root[data-theme] .tr-err-t small,html:root[data-theme] .slab,html:root[data-theme] .sp-mu,html:root[data-theme] .sp-h,
 html:root[data-theme] .sconf-t,html:root[data-theme] .s2-note,html:root[data-theme] .eyebrow,html:root[data-theme] #hb-list article .eyebrow,
-html:root[data-theme] .rec-l,html:root[data-theme] .fcnt,html:root[data-theme] .onb-b span{
+html:root[data-theme] .rec-l,html:root[data-theme] .fcnt{
   font-size:var(--fs-c);font-weight:400;line-height:1.4;color:var(--mu);letter-spacing:0;text-transform:none}
 html:root[data-theme] nav.bnav button.tb,html:root[data-theme] nav.bnav button.tb span{font-size:var(--fs-c);font-weight:500}
 
 /* ── Карточки: только тон заливки ── */
 html:root[data-theme] .ds-card,html:root[data-theme] .hm .ds-card,html:root[data-theme] .tr-err,
-html:root[data-theme] .tr-tile,html:root[data-theme] .sp-card,html:root[data-theme] .map-card,html:root[data-theme] .onb-b,
+html:root[data-theme] .tr-tile,html:root[data-theme] .sp-card,html:root[data-theme] .map-card,
 html:root[data-theme] .bl-card,html:root[data-theme] .bl-cfg-card,html:root[data-theme] #hb-list article,html:root[data-theme] #hb-list.hb-v-list article,
 html:root[data-theme] #tr-root .rounded-2xl.border,html:root[data-theme] #bl-root .rounded-2xl.border,html:root[data-theme] .bg-slate-900\/50,
 html:root[data-theme] .s2-ach ul,html:root[data-theme] .sp-txt ul.sp-rows,html:root[data-theme] .sp-stat,html:root[data-theme] .ds-rows>div,
@@ -1987,7 +1969,6 @@ html:root[data-theme] .hb-chip{background:var(--sf);color:var(--tx);border:0;box
 html:root[data-theme] .hb-chip.on,html:root[data-theme="light"] .hb-chip.on,html:root[data-theme] .fcb.on,html:root[data-theme] .fsb.on{
   background:color-mix(in srgb,var(--acc-s) 20%,var(--sf));color:var(--t1);border:0;box-shadow:none}
 html:root[data-theme] .hb-chip.on i{color:var(--mu)}
-html:root[data-theme] .s2-switch{box-shadow:none}
 
 /* ── Нижняя панель ── */
 html:root[data-theme] .bnav,html:root[data-theme="light"] .bnav{background:var(--sf2);border:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:24px}
@@ -2008,9 +1989,6 @@ html:root[data-theme] #sec-drop{left:12px;right:auto;width:min(19rem,calc(100vw 
 html:root[data-theme] #sec-drop .sd-it{padding:.7rem .85rem;border-radius:var(--r-btn);font-size:var(--fs-h2);font-weight:600;color:var(--tx);background:none}
 html:root[data-theme] #sec-drop .sd-it.on{background:var(--sf2);color:var(--t1)}
 
-html:root[data-theme] .onb-h{margin:1rem 0 1.25rem;text-align:center}
-html:root[data-theme] .onb-list{display:flex;flex-direction:column;gap:.6rem}
-html:root[data-theme] .onb-b{display:block;width:100%;padding:1rem 1.1rem;text-align:left}
 html:root[data-theme] .sp-logo{background:var(--sf);box-shadow:none;border:0;border-radius:var(--r-card)}
 
 /* ── Полоски: штриховка на незаполненной части, заполненная — сплошная; пустая — ровный тон ── */
@@ -2023,20 +2001,9 @@ html:root[data-theme] .hm-bar:has(i[style="width:0%"]){background-image:none}
 html:root[data-theme] .hm-hero,html:root[data-theme="dark"] .hm-hero{background:var(--sf)}
 </style>
 <style id="fi-home-1">
-/* ═══ Главная, этап 1: чип цели и даты, «Сегодня» с неделей капсулами. Только тон заливки, без теней и рамок ═══ */
+/* ═══ Главная, этап 1: «Сегодня» с неделей капсулами. Только тон заливки, без теней и рамок ═══ */
 html:root[data-theme="dark"]{--on-sec:#0F1420}
 html:root[data-theme="light"]{--on-sec:#fff}
-html:root[data-theme] .hm-top{display:flex;flex-wrap:wrap;gap:.5rem}
-html:root[data-theme] .hm-chip{position:relative;display:inline-flex;align-items:center;gap:.35rem;min-height:2.5rem;padding:0 .9rem;border:0;border-radius:12px;background:var(--sf);box-shadow:none;font-size:var(--fs-b);font-weight:400;line-height:1.2;color:var(--tx);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
-html:root[data-theme] .hm-chip:active{background:var(--sf2)}
-html:root[data-theme] .hm-chip .g-m{color:var(--mu)}
-html:root[data-theme] .hm-chip svg{flex:none;width:1.1rem;height:1.1rem;fill:none;stroke:var(--mu);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-html:root[data-theme] .hm-chip input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-html:root[data-theme] .hm-drop{display:flex;flex-direction:column;gap:.1rem;width:min(19rem,100%);padding:.4rem;border-radius:var(--r-card);background:var(--sf3)}
-html:root[data-theme] .hm-di{position:relative;display:block;width:100%;padding:.7rem .85rem;border:0;border-radius:var(--r-btn);background:none;font-size:var(--fs-h2);font-weight:600;line-height:1.3;color:var(--tx);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
-html:root[data-theme] .hm-di.on{background:var(--sf2);color:var(--t1)}
-html:root[data-theme] .hm-di.sub{font-size:var(--fs-b);font-weight:400;color:var(--mu)}
-html:root[data-theme] .hm-di input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
 html:root[data-theme] .hm-hero{gap:1rem;padding:1.15rem;background:var(--sf)}
 html:root[data-theme] .hm-hero .ds-top{align-items:baseline}
 html:root[data-theme] .hm-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem}
@@ -2139,11 +2106,7 @@ html:root[data-theme] .fsb{font-size:var(--fs-b);font-weight:400;color:var(--tx)
 html:root[data-theme] .fcb.on,html:root[data-theme] .fsb.on{color:var(--t1)}
 </style>
 <style id="fi-trainer-1">
-/* ═══ Поправки: центр экрана «Ваша цель», чип цели в одну строку, уровни Конструктора ═══ */
-html:root[data-theme].fi-onb{scrollbar-gutter:auto}
-html:root[data-theme] #onb .sp-body{padding-left:max(1rem,env(safe-area-inset-left,0px));padding-right:max(1rem,env(safe-area-inset-right,0px))}
-html:root[data-theme] #onb .sp-in{width:100%;margin-left:auto;margin-right:auto}
-html:root[data-theme] .hm-chip{white-space:nowrap}
+/* ═══ Поправки: уровни Конструктора ═══ */
 html:root[data-theme] .s2-lvl{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:3px;border-radius:14px;background:var(--sf2)}
 html:root[data-theme] .s2-lvl button{padding:.55rem 0;border:0;border-radius:11px;background:none;font-size:var(--fs-b);font-weight:400;line-height:1.2;color:var(--mu);cursor:pointer;-webkit-tap-highlight-color:transparent}
 html:root[data-theme] .s2-lvl button.on{background:var(--acc-soft);color:var(--t1);font-weight:600}
@@ -2743,19 +2706,11 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
         </div>
 
 
-        <h3 class="sp-h">Подготовка</h3>
+        <h3 class="sp-h">Напоминание о повторении</h3>
         <div class="sp-card sp-pad">
-          <span class="slab">Цель</span>
-          <div class="bl-err-grid s2-lv" id="s-lv" role="group" aria-label="Цель подготовки"></div>
-        </div>
-        <div class="sp-card sp-pad s2-gap">
-          <label class="slab" for="s-rem">Напоминание о повторении</label>
-          <select id="s-rem" class="s2-sel"></select>
+          <select id="s-rem" class="s2-sel" aria-label="Напоминание о повторении"></select>
           <p class="sp-mu s2-note" id="s-rem-h"></p>
         </div>
-
-        <div class="sp-card sp-pad s2-gap"><label class="slab" for="s-exam-d">Дата экзамена</label><input type="date" id="s-exam-d" class="s2-sel"><button type="button" class="sp-btn" id="s-exam-c" style="margin-top:.6rem">Убрать дату</button></div>
-        <div style="margin-top:.75rem"><button type="button" class="s2-switch on" id="s-exam" aria-pressed="true"><span><b>Дата экзамена на главной</b></span><i aria-hidden="true"></i></button></div>
 
         <h3 class="sp-h">Данные</h3>
         <div class="sp-card">
@@ -2850,15 +2805,6 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     </div></div>
   </div>
 
-
-  <!-- Этап 2: выбор уровня при первом запуске -->
-  <div id="onb" class="spage onb" role="dialog" aria-modal="true" aria-label="Цель подготовки" hidden>
-    <div class="sp-body"><div class="sp-in onb-in">
-      <div class="sp-logo" aria-hidden="true"><svg viewBox="-25 -15 290 330"><path d="M42 19C25 44 17 72 17 102C17 150 36 185 70 185C128 185 223 114 223 55C223 4 144 -2 118 78C102 127 80 215 61.5 290" fill="none" stroke="currentColor" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      <h2 class="onb-h">Ваша цель</h2>
-      <div class="onb-list"></div>
-    </div></div>
-  </div>
 
   <!-- Этап 2: своя карточка и колода -->
   <div id="cusheet" class="spage" role="dialog" aria-modal="true" aria-label="Своя карточка" hidden>
@@ -7329,16 +7275,6 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     }
 
     // ═════════════════ ЭТАП 2: ДАННЫЕ ═════════════════
-    // Цель подготовки: только метка (и дата экзамена). Все формулы доступны всегда, по цели ничего не скрывается.
-    // Хранится в ui.goal. Старое сохранение с ui.level переносится: уровни 1–3 (ОГЭ и ЕГЭ) → «ЕГЭ», уровень 4 → «Олимпиады и ВУЗ».
-    const GOALS = [['ege', 'ЕГЭ'], ['cert', 'Национальный сертификат'], ['olymp', 'Олимпиады и ВУЗ']];
-    const GOAL_NAME = { ege: 'ЕГЭ', cert: 'Национальный сертификат', olymp: 'Олимпиады и ВУЗ' };
-    const GOAL_SHORT = { cert: 'Нац. сертификат' };   // только для чипа на Главной
-    const goalUser = () => {
-      const u = (Store && Store.s && Store.s.ui) || {};
-      if (GOAL_NAME[u.goal]) return u.goal;
-      return u.level === 4 ? 'olymp' : (u.level === 1 || u.level === 2 || u.level === 3) ? 'ege' : '';
-    };
     // Рекорды Блица раньше хранились по уровню (ключи …:L4). Теперь колода всегда полная, то есть это прежний уровень 4
     const BL_LV = 'L4';
 
@@ -7400,7 +7336,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
       ? `<div class="mx-auto max-w-xl space-y-3"><p class="sec">Тренажёр и блиц для своих карточек включатся, когда в колоде будет хотя бы 4 карточки. Сейчас: ${SECTIONS.custom.data.length}.</p><p class="sec">Карточки добавляются в Справочнике, раздел «Мои».</p></div>`
       : `<div class="mx-auto max-w-xl"><p class="sec">Тренажёр и блиц для раздела «${esc(SECTIONS[SEC].name)}» появятся позже. Пока доступен справочник.</p></div>`;
     let SEC = 'mechanics';
-    // Формулы раздела: всегда все, цель подготовки их не фильтрует
+    // Формулы раздела: всегда все
     let HBD_C = { key: '', d: [] };
     const HBD = () => {
       const all = SECTIONS[SEC].data, key = SEC + ':' + all.length + ':' + (all.rev || 0);
@@ -9210,7 +9146,7 @@ html:root[data-theme] .hm-hero button.hm-go:active{transform:scale(.97)}
     function prepFresh(name) {                          // вкладка уже подготовлена, и с тех пор ничего не изменилось
       const m = prepMemo[name];
       return !!m && m.rev === (window.__fiRev | 0) && m.day === prepDay() && performance.now() - m.t < PREP_TTL
-        && (name !== 'home' || (HM.view === 'main' && !HM.goal && HM.sel == null));
+        && (name !== 'home' || (HM.view === 'main' && HM.sel == null));
     }
     function prepareTab(name, warm) {                   // warm: подготовка про запас, пока вкладка ещё не нужна (см. «Соседние вкладки наготове»)
       if (!warm) { if (preparedTab === name) return false; preparedTab = name; }
@@ -9770,7 +9706,7 @@ document.addEventListener('touchstart', (e) => {
         });
       });
     }
-    const HM = { view: 'main', goal: false, per: 'week', sel: null, drawn: null };
+    const HM = { view: 'main', per: 'week', sel: null, drawn: null };
     function modeGroup(m) { return m === 'test' || m === 'quiz' ? 'tests' : m === 'ctor' || m === 'rearr' ? 'ctor' : m === 'blitz' ? 'blitz' : 'drill'; }
     // Темы по разделам: сколько формул, сколько выучено, ответов верных и неверных
     function stGroups() {
@@ -9783,17 +9719,6 @@ document.addEventListener('touchstart', (e) => {
         s.ids.push(f.id);
       });
       return out;
-    }
-    // Чип цели и даты: «Цель ЕГЭ ▾» и «+ Дата»; с датой один чип «Нац. сертификат · 45 дней». Список целей раскрывается под чипом
-    function hmGoal() {
-      const u = Store.s.ui, g = goalUser(), gn = GOAL_SHORT[g] || GOAL_NAME[g] || '';
-      const left = u.exam && !u.examOff ? dayDiff(today(), u.exam) : -1, hasD = left >= 0;
-      const chev = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-      const txt = hasD ? `<span>${esc(gn || 'Цель')}</span><span class="g-m">· ${left ? left + ' ' + plRu(left, 'день', 'дня', 'дней') : 'сегодня'}</span>` : gn ? `<span class="g-m">Цель</span><span>${esc(gn)}</span>` : '<span>Выбрать цель</span>';
-      const chip = `<button type="button" class="hm-chip" data-hm="goal" aria-haspopup="listbox" aria-expanded="${HM.goal}">${txt}${chev}</button>`;
-      const date = !hasD && !u.examOff ? `<label class="hm-chip"><span>+ Дата</span><input type="date" id="hm-date" value="" min="${today()}" aria-label="Дата экзамена"></label>` : '';
-      const drop = !HM.goal ? '' : `<div class="hm-drop" role="listbox" aria-label="Цель">${GOALS.map(([k, n]) => `<button type="button" role="option" aria-selected="${k === g}" class="hm-di${k === g ? ' on' : ''}" data-hm="goal-set" data-goal="${k}">${esc(n)}</button>`).join('')}${hasD ? `<label class="hm-di sub"><span>Изменить дату</span><input type="date" id="hm-date" value="${u.exam}" min="${today()}" aria-label="Дата экзамена"></label><button type="button" class="hm-di sub" data-hm="date-x">Убрать дату</button>` : ''}</div>`;
-      return `<div class="hm-top">${chip}${date}</div>${drop}`;
     }
     // Главная: «Выучено» — процент выученных формул по каждому открытому разделу
     function hmLearnHTML() {
@@ -9912,7 +9837,7 @@ document.addEventListener('touchstart', (e) => {
     const stScreen = () => `<div class="tr-bar"><button type="button" data-hm="back" class="tr-back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Назад</button><h2 class="tr-mt">Статистика</h2><span class="tr-gap" aria-hidden="true"></span></div>${stActivity()}${stAccuracy()}`;
     function homeRender() {
       const r = $('home-root'); if (!r) return;
-      const html = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : hmGoal() + dsCardHTML() + hmStatsHTML() + hmLearnHTML()}</div>`;
+      const html = `<div class="mx-auto max-w-xl hm">${HM.view === 'stats' ? stScreen() : dsCardHTML() + hmStatsHTML() + hmLearnHTML()}</div>`;
       // Данные те же — экран тот же: DOM не трогаем (ни раскладки, ни рывка, ни повторной анимации, шары колыбели остаются как были).
       // id градиента графика и класс anim при каждой сборке свои, в сравнение они не идут
       const sig = html.replace(/hmg\d+/g, 'hmg').replace('class="hm-ln anim"', 'class="hm-ln"');
@@ -9922,25 +9847,17 @@ document.addEventListener('touchstart', (e) => {
     function hmClick(e) {
       const m = e.target.closest('[data-s2="ds-more"]'); if (m) { switchTab('trainer'); dsStart(true); return; }
       const b = e.target.closest('[data-hm]');
-      if (HM.goal && !e.target.closest('.hm-drop') && !(b && b.dataset.hm === 'goal')) { HM.goal = false; homeRender(); }
       if (HM.sel != null && !(b && b.dataset.hm === 'pt')) hmSel(null);
       if (!b) return;
       const a = b.dataset.hm;
       if (a === 'pt') hmSel(b);
-      else if (a === 'goal') { HM.goal = !HM.goal; homeRender(); }
-      else if (a === 'goal-set') { HM.goal = false; goalApply(b.dataset.goal); buzz(8); }
-      else if (a === 'date-x') { HM.goal = false; Store.s.ui.exam = ''; Store.save(); homeRender(); }
       else if (a === 'stats' || a === 'back') { HM.sel = null; HM.view = a === 'stats' ? 'stats' : 'main'; homeRender(); window.scrollTo({ top: 0, behavior: 'auto' }); }
       else if (a === 'per' && HM_PER.some((x) => x[0] === b.dataset.per)) { HM.per = b.dataset.per; HM.sel = null; homeRender(); }
-    }
-    function hmChange(e) {
-      if (e.target.id !== 'hm-date') return;
-      Store.s.ui.exam = /^\d{4}-\d{2}-\d{2}$/.test(e.target.value) ? e.target.value : ''; Store.save(); HM.goal = false; homeRender();
     }
     function initStruct() {
       initHbView();
       homeRender();
-      $('home-root').addEventListener('click', hmClick); $('home-root').addEventListener('change', hmChange);
+      $('home-root').addEventListener('click', hmClick);
       // Линия графика рисуется один раз. Доиграла — класс anim снимаем: иначе она рисовалась бы заново при каждом показе Главной
       // (скрытая вкладка — это display:none, а у такого элемента CSS-анимации стартуют с начала)
       $('home-root').addEventListener('animationend', (e) => {
@@ -9954,7 +9871,7 @@ document.addEventListener('touchstart', (e) => {
       document.addEventListener('mechcore:tabprepare', (e) => {
         if (e.detail.tab !== 'home') return;
         if (HM.sel != null) { try { hmSel(null); } catch (err) { /* подсказки уже нет */ } }   // подсказка выставляется прямо в DOM: если данные те же, перерисовка её не сотрёт
-        HM.view = 'main'; HM.goal = false; HM.sel = null;
+        HM.view = 'main'; HM.sel = null;
         homeRender();
       });
       document.addEventListener('click', (e) => {
@@ -10157,7 +10074,6 @@ document.addEventListener('touchstart', (e) => {
     let navArmed = false, navSkip = false, navT = 0, navSkipT = 0;
     function navStep() {
       if (document.getElementById('splash')) return null;
-      if (!$('onb').hidden) return null;
       if (!$('fsheet').hidden) return () => fSheet(false);
       if (!$('ssheet').hidden) return sBack;
       if (activeTab === 'trainer' && blOpen()) {
@@ -10875,9 +10791,9 @@ document.addEventListener('touchstart', (e) => {
 
     // ═══ Блиц: множитель серии, «Выживание» и недельный вызов ═══
     const BL_MODES = [['round', 'Раунд'], ['surv', 'Выживание']];
-    // Выживание: все формулы выбранного плана. Сейчас цель подготовки только метка и не скрывает формулы, поэтому план = весь список
+    // Выживание: все формулы
     const blSurvPool = () => allF();
-    const blSurvText = () => { const n = blSurvPool().length, pl = GOAL_NAME[goalUser()]; return `Все ${n} ${plForm(n)}${pl ? ' плана «' + pl + '»' : ''} идут в случайном порядке, без таймера. Первая ошибка заканчивает игру. Счёт показывается как «N из ${n}».`; };
+    const blSurvText = () => { const n = blSurvPool().length; return `Все ${n} ${plForm(n)} идут в случайном порядке, без таймера. Первая ошибка заканчивает игру. Счёт показывается как «N из ${n}».`; };
     function blRecKey() {
       if (BL.mode === 'surv') return 'surv:' + BL_LV;
       // раунд по выбранным темам — отдельный рекорд: по двум темам набрать очки проще, чем по всему разделу
@@ -10941,29 +10857,6 @@ document.addEventListener('touchstart', (e) => {
       }, 'image/png');
     }
 
-    // ═══ Цель подготовки: вопрос при первом запуске и переключатель в настройках ═══
-    function goalApply(g) {
-      if (!GOAL_NAME[g]) return;
-      Store.s.ui.goal = g; Store.save();
-      homeRender();
-    }
-    function onbShow() {
-      const o = $('onb'); if (!o) return;
-      o.querySelector('.onb-list').innerHTML = GOALS.map(([k, n]) => `<button type="button" data-onb="${k}" class="onb-b"><b>${n}</b></button>`).join('');
-      o.hidden = false; document.body.style.overflow = 'hidden';
-    }
-    function onbInit() {
-      const o = $('onb'); if (!o) return;
-      o.addEventListener('click', (e) => {
-        const b = e.target.closest('[data-onb]'); if (!b) return;
-        o.hidden = true; document.body.style.overflow = '';
-        goalApply(b.dataset.onb); buzz(8);
-      });
-      if (goalUser()) return;
-      const wait = () => { if (document.getElementById('splash')) setTimeout(wait, 150); else onbShow(); };
-      wait();
-    }
-
     // ═══ Напоминание: локальное уведомление в выбранный час с реальным числом формул к повторению ═══
     // Работает в Android-обёртке на Capacitor (плагин LocalNotifications). В обычном браузере только сохраняет выбор
     const LN = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
@@ -10985,17 +10878,10 @@ document.addEventListener('touchstart', (e) => {
     document.addEventListener('visibilitychange', () => { if (document.hidden) s2Remind(); });
 
     function s2SettingsPaint() {
-      { const ex = $('s-exam'); if (ex) { const on = !Store.s.ui.examOff; ex.classList.toggle('on', on); ex.setAttribute('aria-pressed', String(on)); } }
-      { const ed = $('s-exam-d'); if (ed) ed.value = Store.s.ui.exam || ''; }
-      document.querySelectorAll('#s-lv [data-goal]').forEach((b) => { const on = b.dataset.goal === goalUser(); b.classList.toggle('on', on); b.setAttribute('aria-pressed', String(on)); });
       const sel = $('s-rem'); if (sel) sel.value = Store.s.ui.remindHour == null ? '' : String(Store.s.ui.remindHour);
       const rh = $('s-rem-h'); if (rh) rh.textContent = LN() ? '' : 'Только в приложении для Android';
     }
     function s2SettingsClick(e) {
-      if (e.target.closest('#s-exam-c')) { Store.s.ui.exam = ''; Store.save(); s2SettingsPaint(); homeRender(); return true; }
-      if (e.target.closest('#s-exam')) { Store.s.ui.examOff = !Store.s.ui.examOff; Store.save(); s2SettingsPaint(); homeRender(); return true; }
-      const b = e.target.closest('[data-goal]');
-      if (b) { goalApply(b.dataset.goal); s2SettingsPaint(); buzz(8); return true; }
       const c = e.target.closest('[data-s2r]');
       if (c) { copyText($('s2-rep').textContent).then((ok) => { c.textContent = ok ? 'Скопировано' : 'Не удалось скопировать'; setTimeout(() => { c.textContent = 'Скопировать'; }, 1500); }); return true; }
       return false;
@@ -11005,7 +10891,7 @@ document.addEventListener('touchstart', (e) => {
       const D = S2().days, t = today(), act = (n) => { let k = 0; for (let i = 0; i < n; i++) if (D[dayAdd(t, -i)]) k++; return k; };
       const sum = (n) => { let k = 0; for (let i = 0; i < n; i++) k += D[dayAdd(t, -i)] || 0; return k; };
       const all = Object.values(D).reduce((a, b) => a + b, 0), st = dsStreak();
-      const txt = ['Фи ' + APP_VERSION + ' · цель: ' + (GOAL_NAME[goalUser()] || 'не выбрана'),
+      const txt = ['Фи ' + APP_VERSION,
         'Серия «Сегодня»: ' + st + ' (рекорд ' + S2().daily.best + ')',
         'Активных дней: ' + act(7) + ' из 7, ' + act(30) + ' из 30',
         'Ответов: за 7 дней ' + sum(7) + ', всего ' + all,
@@ -11014,15 +10900,11 @@ document.addEventListener('touchstart', (e) => {
       return `<div class="s2-rep"><p class="sp-mu">Добавьте в сообщение эти строки: так проще понять, что случилось. Личных данных в них нет.</p><pre id="s2-rep">${esc(txt)}</pre><button type="button" data-s2r="copy" class="sp-btn">Скопировать</button></div>`;
     }
     function s2SettingsInit() {
-      const ed = $('s-exam-d');
-      if (ed) ed.addEventListener('change', () => { Store.s.ui.exam = /^\d{4}-\d{2}-\d{2}$/.test(ed.value) ? ed.value : ''; Store.save(); s2SettingsPaint(); homeRender(); });
       const sel = $('s-rem');
       if (sel) {
         sel.innerHTML = '<option value="">Выключено</option>' + Array.from({ length: 16 }, (_, i) => i + 7).map((h) => `<option value="${h}">${String(h).padStart(2, '0')}:00</option>`).join('');
         sel.addEventListener('change', () => { Store.s.ui.remindHour = sel.value === '' ? null : +sel.value; Store.save(); s2SettingsPaint(); s2Remind(); });
       }
-      const lv = $('s-lv');
-      if (lv) lv.innerHTML = GOALS.map(([k, n]) => `<button type="button" data-goal="${k}" class="bl-err-btn">${n}</button>`).join('');
     }
 
     // ═══ Свои карточки: редактор с клавиатурой символов, экспорт и импорт колоды ═══
@@ -11180,7 +11062,7 @@ document.addEventListener('touchstart', (e) => {
         const x = e.target.closest('[data-hbb]'); if (!x) return;
         if (x.dataset.hbb === 'add') cuOpen(null); else if (x.dataset.hbb === 'deck') cuDeck(); else mapOpen(HB.cat);
       });
-      cuInit(); mapInit(); onbInit(); s2SettingsInit(); s2HbBar(); s2Remind();
+      cuInit(); mapInit(); s2SettingsInit(); s2HbBar(); s2Remind();
     });
 
   </script>
@@ -11971,12 +11853,10 @@ html:root[data-theme="dark"] .tr-err,
 html:root[data-theme="dark"] .tr-tile,
 html:root[data-theme="dark"] .sp-card,
 html:root[data-theme="dark"] .map-card,
-html:root[data-theme="dark"] .onb-b,
 html:root[data-theme="dark"] .bl-card,
 html:root[data-theme="dark"] .bl-cfg-card,
 html:root[data-theme="dark"] .th-list,
 html:root[data-theme="dark"] .th-err,
-html:root[data-theme="dark"] .hm-chip,
 html:root[data-theme="dark"] #hb-search,
 html:root[data-theme="dark"] .hb-chip,
 html:root[data-theme="dark"] button.hdb,
@@ -12059,7 +11939,7 @@ html:root[data-theme="light"][data-accent="blue"]{--bg:#E6ECF4;--ln:#CFD9E6}
 html:root[data-theme="light"][data-accent="green"]{--bg:#E8EDDF;--ln:#D1D9C3}
 html:root[data-theme="light"][data-accent="orange"]{--bg:#F0E8DD;--ln:#DCCFBF}
 html:root[data-theme="light"] #hb-list article,html:root[data-theme="light"] .tr-err,html:root[data-theme="light"] .tr-tile,html:root[data-theme="light"] .sp-card,html:root[data-theme="light"] .map-card,
-html:root[data-theme="light"] .bl-card,html:root[data-theme="light"] .bl-cfg-card,html:root[data-theme="light"] .th-list,html:root[data-theme="light"] .th-err,html:root[data-theme="light"] .hm-chip,
+html:root[data-theme="light"] .bl-card,html:root[data-theme="light"] .bl-cfg-card,html:root[data-theme="light"] .th-list,html:root[data-theme="light"] .th-err,
 html:root[data-theme="light"] #hb-search,html:root[data-theme="light"] .hb-chip,html:root[data-theme="light"] button.hdb,html:root[data-theme="light"] .fbtn,html:root[data-theme="light"] .vsw,html:root[data-theme="light"] .bnav,
 html:root[data-theme="light"] .hm .ds-card:not(.hm-hero){border:1px solid var(--ln)}
 html:root[data-theme="light"] #hb-list article,html:root[data-theme="light"] .tr-tile,html:root[data-theme="light"] .sp-card,html:root[data-theme="light"] .th-list,html:root[data-theme="light"] .th-err,
@@ -12101,7 +11981,6 @@ html:root[data-theme] #hb-list.hb-v-list article>.fbox .katex-display{margin:.15
 
 /* 4. Настройки: подписи, переключатели и поля того же размера, что строки «Данные» и «Информация» */
 html:root[data-theme] #ssheet .slab{margin-bottom:.6rem;font-size:var(--fs-h2);font-weight:600;line-height:1.3;color:var(--tx)}
-html:root[data-theme] #ssheet .s2-switch b{font-size:var(--fs-h2);font-weight:600;line-height:1.3;color:var(--tx)}
 html:root[data-theme] #ssheet .s2-sel{font-size:var(--fs-b);font-weight:400;color:var(--tx)}
 html:root[data-theme] #ssheet .seg button,html:root[data-theme] #ssheet .bl-err-btn,html:root[data-theme] #ssheet .s2-lvl button{font-size:var(--fs-b);font-weight:600}
 html:root[data-theme] #ssheet .sp-btn,html:root[data-theme] #ssheet .sdanger,html:root[data-theme] #ssheet .sghost{font-size:var(--fs-b);font-weight:600}
@@ -12117,7 +11996,6 @@ html:root[data-theme] #theme-sw{display:none!important}
    Чтобы вернуть прежний вид, удалите этот блок целиком. */
 html:root[data-theme="light"]:not([data-accent]){--bg:#E7EAF7;--ln:#CBD2EB}
 html:root[data-theme="light"] #set-btn.hdb{background:color-mix(in srgb,var(--acc) 22%,#fff);color:var(--acc);border-color:color-mix(in srgb,var(--acc) 24%,var(--ln))}
-html:root[data-theme="light"] .hm-chip svg{stroke:var(--acc)}
 html:root[data-theme="light"] .hm-all svg{color:var(--acc)}
 html:root[data-theme="light"] .hm-seg{background:color-mix(in srgb,var(--acc) 8%,#fff)}
 html:root[data-theme="light"] .hm-seg button.on{background:var(--acc);color:var(--on-acc);font-weight:700}
@@ -12157,8 +12035,11 @@ html:root[data-theme][data-theme] .th-err,
 html:root[data-theme][data-theme] .tt-n,
 html:root[data-theme][data-theme] .fhead b{font-size:var(--fs-h2);font-weight:600;line-height:1.3;letter-spacing:0}
 html:root[data-theme][data-theme] .hb-gh,
-html:root[data-theme][data-theme] .th-gh,
-html:root[data-theme][data-theme] .sp-h{font-size:var(--fs-b);font-weight:500;letter-spacing:0;color:var(--mu)}
+html:root[data-theme][data-theme] .th-gh{font-size:var(--fs-b);font-weight:500;letter-spacing:0;color:var(--mu)}
+
+/* ═══ Настройки: заголовки разделов («Внешний вид», «Данные»…) крупнее: размер строк (--fs-h2, 18), серым, 600.
+   Остальные подписи групп не затронуты. Чтобы вернуть прежний вид, удалите этот блок целиком. ═══ */
+html:root[data-theme][data-theme] .sp-h{font-size:var(--fs-h2);font-weight:600;line-height:1.3;letter-spacing:0;color:var(--mu)}
 
 /* ═══ «Главная: заголовок блока и строки» (12 ноября). Заголовок блока («Статистика», «Выучено»…) крупнее и жирнее,
    строки под ним (названия разделов, проценты) остаются прежними, жирными; заголовок отличается размером.
@@ -12283,16 +12164,16 @@ html:root[data-theme] .th-scrim{transition:opacity .32s ease-out}
   html:root[data-theme] .sheet[hidden]{background:transparent;pointer-events:none}
   .sheet .sheet-card{animation:none;transition:transform .46s cubic-bezier(.32,.72,0,1)}
   .sheet[hidden] .sheet-card{transform:translateY(100%);transition-duration:.28s}
-  .spage:not(.onb){animation:none;box-shadow:-10px 0 28px rgba(20,32,90,.14);transition:transform .42s cubic-bezier(.32,.72,0,1),display .42s allow-discrete}
-  .spage:not(.onb)[hidden]{transform:translateX(100%);pointer-events:none;transition-duration:.34s}
+  .spage.spage{animation:none;box-shadow:-10px 0 28px rgba(20,32,90,.14);transition:transform .42s cubic-bezier(.32,.72,0,1),display .42s allow-discrete}
+  .spage.spage[hidden]{transform:translateX(100%);pointer-events:none;transition-duration:.34s}
   @starting-style{
     .sheet{background-color:transparent}
     .sheet .sheet-card{transform:translateY(100%)}
-    .spage:not(.onb){transform:translateX(100%)}
+    .spage.spage{transform:translateX(100%)}
   }
 }
 @media (prefers-reduced-motion:reduce){
-  html:root[data-theme] .th-scrim,html:root[data-theme] .th-panel,.sheet,.sheet .sheet-card,.spage:not(.onb){transition:none}
+  html:root[data-theme] .th-scrim,html:root[data-theme] .th-panel,.sheet,.sheet .sheet-card,.spage.spage{transition:none}
 }
 
 /* Первые карточки Справочника всегда отрисованы (см. fi-smooth-js) */
@@ -12312,16 +12193,14 @@ main>section#tab-home.hidden[data-warm] *,main>section#tab-home.hidden[data-warm
    2) Если страница приближена (зум), жесты браузера возвращаются целиком: иначе боковое смещение приблизенной страницы было бы запрещено. */
 (function () {
   var root = document.documentElement, body = document.body;
-  var onb = document.getElementById('onb'), tt = document.getElementById('tab-trainer'), tr = document.getElementById('tr-root');
-  function syncOnb() { root.classList.toggle('fi-onb', !!onb && !onb.hidden); }
+  var tt = document.getElementById('tab-trainer'), tr = document.getElementById('tr-root');
   function syncTr() { body.classList.toggle('fi-trh', !!(tt && tr && !tt.classList.contains('hidden') && tr.hidden)); }
   if (window.MutationObserver) {
-    if (onb) new MutationObserver(syncOnb).observe(onb, { attributes: true, attributeFilter: ['hidden'] });
     var mo = new MutationObserver(syncTr);
     if (tt) mo.observe(tt, { attributes: true, attributeFilter: ['class'] });
     if (tr) mo.observe(tr, { attributes: true, attributeFilter: ['hidden'] });
   }
-  syncOnb(); syncTr();
+  syncTr();
   var vv = window.visualViewport;
   if (vv && vv.addEventListener) {
     var zoom = function () { root.classList.toggle('fi-zoomed', vv.scale > 1.02); };
